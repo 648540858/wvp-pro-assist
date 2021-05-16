@@ -2,6 +2,7 @@ package top.panll.assist.service;
 
 import net.bramp.ffmpeg.FFprobe;
 import net.bramp.ffmpeg.probe.FFmpegProbeResult;
+import net.bramp.ffmpeg.progress.Progress;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -82,26 +83,13 @@ public class VideoFileService {
         logger.debug("获取[app: {}, stream: {}, statime: {}, endTime: {}]的视频", app, stream,
                 startTimeStr, endTimeStr);
 
-        File file = new File(userSettings.getRecord());
-        File[] appFiles = file.listFiles((File dir, String name) -> {
-                return app.equals(name);
-        });
-        if (appFiles.length == 0) {
-            logger.warn("获取[app: {}, stream: {}, statime: {}, endTime: {}]的视频时未找到目录： {}", app, stream,
-                    startTimeStr, endTimeStr, app);
-            return result;
-        }
-        File appFile = appFiles[0];
-        File[] streamFiles = appFile.listFiles((File dir, String name)-> {
-                return stream.equals(name);
-        });
-        if (streamFiles.length == 0) {
+        File recordFile = new File(userSettings.getRecord());
+        File streamFile = new File(recordFile.getAbsolutePath() + File.separator + app + File.separator + stream);
+        if (!streamFile.exists()) {
             logger.warn("获取[app: {}, stream: {}, statime: {}, endTime: {}]的视频时未找到目录： {}", app, stream,
                     startTimeStr, endTimeStr, stream);
             return result;
         }
-        File streamFile = streamFiles[0];
-
         File[] dateFiles = streamFile.listFiles((File dir, String name) -> {
             Date fileDate = null;
             try {
@@ -163,7 +151,13 @@ public class VideoFileService {
 
     public void mergeOrCut(String app, String stream, Date startTime, Date endTime) {
         List<File> filesInTime = this.getFilesInTime(app, stream, startTime, endTime);
+        File recordFile = new File(userSettings.getRecord());
+        File streamFile = new File(recordFile.getAbsolutePath() + File.separator + app + File.separator + stream);
+        FFmpegExecUtils.getInstance().mergeOrCutFile(filesInTime, streamFile, (String status, double percentage, String result)->{
+            if (status.equals(Progress.Status.END.name())) {
 
+            }
+        });
     }
 
 }

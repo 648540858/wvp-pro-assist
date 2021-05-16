@@ -40,10 +40,10 @@ public class FFmpegExecUtils {
     public FFmpeg ffmpeg;
 
     public interface VideoHandEndCallBack {
-        public void run(String status, double percentage, String result);
+        void run(String status, double percentage, String result);
     }
 
-    public static void mergeOrCutFile(List<File> fils, File dest, VideoHandEndCallBack callBack){
+    public void mergeOrCutFile(List<File> fils, File dest, VideoHandEndCallBack callBack){
         FFmpeg ffmpeg = FFmpegExecUtils.getInstance().ffmpeg;
         FFprobe ffprobe = FFmpegExecUtils.getInstance().ffprobe;
         if (fils == null || fils.size() == 0 || ffmpeg == null || ffprobe == null || dest== null || !dest.exists()){
