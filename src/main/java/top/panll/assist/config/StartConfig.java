@@ -39,6 +39,14 @@ public class StartConfig implements CommandLineRunner {
             logger.error("[userSettings.record]配置错误，请检查路径是否存在");
             System.exit(1);
         }
+        if (!recordFile.canRead()) {
+            logger.error("[userSettings.record]路径无法读取");
+            System.exit(1);
+        }
+        if (!recordFile.canWrite()) {
+            logger.error("[userSettings.record]路径无法写入");
+            System.exit(1);
+        }
         try {
             String ffmpegPath = userSettings.getFfmpeg();
             String ffprobePath = userSettings.getFfprobe();
