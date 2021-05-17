@@ -43,27 +43,29 @@ public class FFmpegExecUtils {
         void run(String status, double percentage, String result);
     }
 
-    public void mergeOrCutFile(List<File> fils, File dest, VideoHandEndCallBack callBack){
+    public String mergeOrCutFile(List<File> fils, File dest, String temp, VideoHandEndCallBack callBack){
         FFmpeg ffmpeg = FFmpegExecUtils.getInstance().ffmpeg;
         FFprobe ffprobe = FFmpegExecUtils.getInstance().ffprobe;
         if (fils == null || fils.size() == 0 || ffmpeg == null || ffprobe == null || dest== null || !dest.exists()){
             callBack.run("error", 0.0, null);
-            return;
+            return null;
         }
 
-        String temp = DigestUtils.md5DigestAsHex(String.valueOf(System.currentTimeMillis()).getBytes());
+
         File tempFile = new File(dest.getAbsolutePath() + File.separator + temp);
         if (!tempFile.exists()) {
             tempFile.mkdirs();
         }
         FFmpegExecutor executor = new FFmpegExecutor(ffmpeg, ffprobe);
-        String fileListName = tempFile.getName() + File.separator + "fileList";
+        String fileListName = tempFile.getAbsolutePath() + File.separator + "fileList";
         double durationAll = 0.0;
         try {
             BufferedWriter bw =new BufferedWriter(new FileWriter(fileListName));
             for (File file : fils) {
-                FFmpegProbeResult in = ffprobe.probe(file.getAbsolutePath());
-                double duration = in.getFormat().duration;
+                String[] split = file.getName().split("-");
+                if (split.length != 3) continue;
+                String durationStr = split[2].replace(".mp4", "");
+                Double duration = Double.parseDouble(durationStr)/1000;
                 System.out.println(duration);
                 bw.write("file " + file.getAbsolutePath());
                 bw.newLine();
@@ -76,6 +78,7 @@ public class FFmpegExecUtils {
             e.printStackTrace();
             callBack.run("error", 0.0, null);
         }
+        String recordFileResultPath = dest.getAbsolutePath() + File.separator + temp + File.separator + "record.mp4";
         long startTime = System.currentTimeMillis();
         FFmpegBuilder builder = new FFmpegBuilder()
 
@@ -83,10 +86,9 @@ public class FFmpegExecUtils {
                 .overrideOutputFiles(true)
                 .setInput(fileListName) // Or filename
                 .addExtraArgs("-safe", "0")
-                .addOutput(dest.getAbsolutePath() + File.separator + temp + ".mp4")
+                .addOutput(recordFileResultPath)
                 .setVideoCodec("copy")
                 .setFormat("mp4")
-
                 .done();
 
 
@@ -96,18 +98,17 @@ public class FFmpegExecUtils {
             double percentage = progress.out_time_ns / duration_ns;
 
             // Print out interesting information about the progress
-            System.out.println(String.format(
-                    "[%.0f%%] status:%s frame:%d time:%s ms fps:%.0f speed:%.2fx",
-                    percentage * 100,
-                    progress.status,
-                    progress.frame,
-                    FFmpegUtils.toTimecode(progress.out_time_ns, TimeUnit.NANOSECONDS),
-                    progress.fps.doubleValue(),
-                    progress.speed
-            ));
+//            System.out.println(String.format(
+//                    "[%.0f%%] status:%s frame:%d time:%s ms fps:%.0f speed:%.2fx",
+//                    percentage * 100,
+//                    progress.status,
+//                    progress.frame,
+//                    FFmpegUtils.toTimecode(progress.out_time_ns, TimeUnit.NANOSECONDS),
+//                    progress.fps.doubleValue(),
+//                    progress.speed
+//            ));
             if (progress.status.equals(Progress.Status.END)){
-                callBack.run(progress.status.name(), percentage,
-                        dest.getAbsolutePath() + File.separator + temp + ".mp4");
+                callBack.run(progress.status.name(), percentage,dest.getName() + File.separator + temp + File.separator + "record.mp4");
                 System.out.println(System.currentTimeMillis() - startTime);
             }else {
                 callBack.run(progress.status.name(), percentage, null);
@@ -115,6 +116,7 @@ public class FFmpegExecUtils {
         });
 
         job.run();
+        return temp;
     }
 
 }

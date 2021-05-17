@@ -31,6 +31,7 @@ public class StartConfig implements CommandLineRunner {
     @Autowired
     private VideoFileService videoFileService;
 
+
     @Override
     public void run(String... args) {
         String record = userSettings.getRecord();
