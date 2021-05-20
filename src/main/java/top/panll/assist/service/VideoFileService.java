@@ -1,5 +1,6 @@
 package top.panll.assist.service;
 
+import com.alibaba.fastjson.JSON;
 import net.bramp.ffmpeg.FFprobe;
 import net.bramp.ffmpeg.probe.FFmpegProbeResult;
 import net.bramp.ffmpeg.progress.Progress;
@@ -8,7 +9,6 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.data.redis.core.StringRedisTemplate;
-import org.springframework.data.redis.listener.RedisMessageListenerContainer;
 import org.springframework.stereotype.Service;
 import org.springframework.util.DigestUtils;
 import top.panll.assist.config.RedisUtil;
@@ -40,8 +40,10 @@ public class VideoFileService {
 
     private ThreadPoolExecutor processThreadPool;
 
+    private SimpleDateFormat simpleDateFormat = new SimpleDateFormat("yyyy-MM-dd");
 
-    @Bean("iniThreadPool")
+
+    @Bean("threadPoolExecutor")
     private ThreadPoolExecutor iniThreadPool() {
 
         int processThreadNum = Runtime.getRuntime().availableProcessors() * 10;
@@ -57,7 +59,9 @@ public class VideoFileService {
         File recordFile = new File(userSettings.getRecord());
         if (recordFile != null) {
             File[] files = recordFile.listFiles();
-            return Arrays.asList(files);
+            List<File> result = Arrays.asList(files);
+            Collections.sort(result);
+            return result;
         }else {
             return null;
         }
@@ -67,7 +71,9 @@ public class VideoFileService {
         File appFile = new File(userSettings.getRecord() + File.separator + app);
         if (appFile != null) {
             File[] files = appFile.listFiles();
-            return Arrays.asList(files);
+            List<File> result = Arrays.asList(files);
+            Collections.sort(result);
+            return result;
         }else {
             return null;
         }
@@ -105,6 +111,36 @@ public class VideoFileService {
                 exception.printStackTrace();
             }
         }
+    }
+
+    public List<Map<String, String>> getList() {
+
+        List<Map<String, String>> result = new ArrayList<>();
+
+        List<File> appList = getAppList();
+        if (appList != null && appList.size() > 0) {
+            for (File appFile : appList) {
+                List<File> streamList = getStreamList(appFile.getName());
+                if (streamList != null && streamList.size() > 0) {
+                    for (File streamFile : streamList) {
+                        Map<String, String> data = new HashMap<>();
+                        data.put("app", appFile.getName());
+                        data.put("stream", streamFile.getName());
+
+//                        BasicFileAttributes bAttributes = null;
+//                        try {
+//                            bAttributes = Files.readAttributes(streamFile.toPath(),
+//                                    BasicFileAttributes.class);
+//                        } catch (IOException e) {
+//                            e.printStackTrace();
+//                        }
+//                        data.put("time", simpleDateFormat.format(new Date(bAttributes.lastModifiedTime().toMillis())));
+                        result.add(data);
+                    }
+                }
+            }
+        }
+        return result;
     }
 
     /**
@@ -212,14 +248,37 @@ public class VideoFileService {
                     data.put("percentage", "1");
                     data.put("recordFile", result);
                     redisUtil.set(app + "_" + stream + "_" + temp, data, 3*60*60);
-                    stringRedisTemplate.convertAndSend("topic_mergeorcut_end",  data);
+                    stringRedisTemplate.convertAndSend("topic_mergeorcut_end", JSON.toJSONString(data));
                 }else {
                     data.put("percentage", percentage + "");
                     redisUtil.set(app + "_" + stream + "_" + temp, data, 3*60*60);
-                    stringRedisTemplate.convertAndSend("topic_mergeorcut_continue",  data);
+                    stringRedisTemplate.convertAndSend("topic_mergeorcut_continue",  JSON.toJSONString(data));
                 }
             });
         });
         return temp;
+    }
+
+
+    public List<File> getDateList(String app, String stream) {
+        File recordFile = new File(userSettings.getRecord());
+        File streamFile = new File(recordFile.getAbsolutePath() + File.separator + app + File.separator + stream);
+        if (!streamFile.exists()) {
+            logger.warn("获取[app: {}, stream: {}]的视频时未找到目录： {}", app, stream, stream);
+            return null;
+        }
+        File[] dateFiles = streamFile.listFiles();
+        List<File> dateFileList = Arrays.asList(dateFiles);
+        dateFileList.sort((File f1, File f2)->{
+            int sortResult = 0;
+            SimpleDateFormat formatterForDate = new SimpleDateFormat("yyyy-MM-dd");
+            try {
+                sortResult = formatterForDate.parse(f1.getName()).compareTo(formatterForDate.parse(f2.getName()));
+            } catch (ParseException e) {
+                e.printStackTrace();
+            }
+            return sortResult;
+        });
+        return dateFileList;
     }
 }

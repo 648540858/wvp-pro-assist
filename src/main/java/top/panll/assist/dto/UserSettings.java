@@ -9,6 +9,9 @@ public class UserSettings {
     @Value("${userSettings.record}")
     private String record;
 
+    @Value("${userSettings.recordDay}")
+    private int recordDay;
+
     @Value("${userSettings.ffmpeg}")
     private String ffmpeg;
 
@@ -37,5 +40,13 @@ public class UserSettings {
 
     public void setFfprobe(String ffprobe) {
         this.ffprobe = ffprobe;
+    }
+
+    public int getRecordDay() {
+        return recordDay;
+    }
+
+    public void setRecordDay(int recordDay) {
+        this.recordDay = recordDay;
     }
 }
