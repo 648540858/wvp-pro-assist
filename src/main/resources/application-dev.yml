@@ -46,8 +46,7 @@ logging:
         max-size: 10MB
         total-size-cap: 300MB
     level:
-        com:
-            genersoft:
-                iot: info
-    net:
-        bramp: warning
+        root: WARN
+        top:
+            panll:
+                assist: info

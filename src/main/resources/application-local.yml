@@ -6,7 +6,7 @@ spring:
         # [必须修改] 端口号
         port: 6379
         # [可选] 数据库 DB
-        database: 8
+        database: 10
         # [可选] 访问密码,若你的redis服务器没有设置密码，就不需要用密码去连接
         password:
         # [可选] 超时时间
@@ -29,7 +29,7 @@ server:
 # [根据业务需求配置]
 userSettings:
     # [必选 ] zlm配置的录像路径
-    record: /media/lin/Server/ZLMediaKit/dev/ZLMediaKit/release/linux/Debug/www/record
+    record: /home/lin/server/ZLMediaKit/release/linux/Debug/www/record/
     # [可选 ] 录像保存时长（单位： 天）每天晚12点自动对过期文件执行清理
     recordDay: 7
     # [必选 ] ffmpeg路径
@@ -45,8 +45,7 @@ logging:
         max-size: 10MB
         total-size-cap: 300MB
     level:
-        com:
-            genersoft:
-                iot: info
-    net:
-        bramp: warning
+        root: WARN
+        top:
+            panll:
+                assist: debug

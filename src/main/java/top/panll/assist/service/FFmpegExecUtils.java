@@ -51,7 +51,6 @@ public class FFmpegExecUtils {
             return null;
         }
 
-
         File tempFile = new File(dest.getAbsolutePath() + File.separator + temp);
         if (!tempFile.exists()) {
             tempFile.mkdirs();
@@ -66,14 +65,12 @@ public class FFmpegExecUtils {
                 if (split.length != 3) continue;
                 String durationStr = split[2].replace(".mp4", "");
                 Double duration = Double.parseDouble(durationStr)/1000;
-                System.out.println(duration);
                 bw.write("file " + file.getAbsolutePath());
                 bw.newLine();
                 durationAll += duration;
             }
             bw.flush();
             bw.close();
-            System.out.println(durationAll);
         } catch (IOException e) {
             e.printStackTrace();
             callBack.run("error", 0.0, null);
@@ -91,7 +88,6 @@ public class FFmpegExecUtils {
                 .setFormat("mp4")
                 .done();
 
-
         double finalDurationAll = durationAll;
         FFmpegJob job = executor.createJob(builder, (Progress progress) -> {
             final double duration_ns = finalDurationAll * TimeUnit.SECONDS.toNanos(1);
@@ -107,6 +103,7 @@ public class FFmpegExecUtils {
 //                    progress.fps.doubleValue(),
 //                    progress.speed
 //            ));
+
             if (progress.status.equals(Progress.Status.END)){
                 callBack.run(progress.status.name(), percentage,dest.getName() + File.separator + temp + File.separator + "record.mp4");
                 System.out.println(System.currentTimeMillis() - startTime);
@@ -114,7 +111,6 @@ public class FFmpegExecUtils {
                 callBack.run(progress.status.name(), percentage, null);
             }
         });
-
         job.run();
         return temp;
     }

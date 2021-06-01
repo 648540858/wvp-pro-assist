@@ -53,7 +53,7 @@ public class StartConfig implements CommandLineRunner {
             String ffprobePath = userSettings.getFfprobe();
             FFmpeg ffmpeg = new FFmpeg(ffmpegPath);
             FFprobe ffprobe = new FFprobe(ffprobePath);
-            logger.info("wvp-pro辅助程序启动成功");
+            logger.info("wvp-pro辅助程序启动成功。 \n{}\n{} ", ffmpeg.version(), ffprobe.version());
             FFmpegExecUtils.getInstance().ffmpeg = ffmpeg;
             FFmpegExecUtils.getInstance().ffprobe = ffprobe;
             // 对目录进行预整理

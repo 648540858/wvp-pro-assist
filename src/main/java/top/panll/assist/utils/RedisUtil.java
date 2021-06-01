@@ -1,4 +1,4 @@
-package top.panll.assist.config;
+package top.panll.assist.utils;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.redis.core.*;
@@ -18,7 +18,7 @@ import java.util.concurrent.TimeUnit;
 public class RedisUtil {
 
 	@Autowired
-    private RedisTemplate redisTemplate;
+    private RedisTemplate<Object, Object> redisTemplate;
 	
 	/**
      * 指定缓存失效时间
@@ -474,7 +474,7 @@ public class RedisUtil {
      * @param end
      * @return
      */
-    public Set<ZSetOperations.TypedTuple<String>> zRangeWithScore(Object key, int start, int end) {
+    public Set<ZSetOperations.TypedTuple<Object>> zRangeWithScore(Object key, int start, int end) {
         return redisTemplate.opsForZSet().rangeWithScores(key, start, end);
     }
     /**
@@ -487,7 +487,7 @@ public class RedisUtil {
      * @param end
      * @return
      */
-    public Set<String> zRevRange(Object key, int start, int end) {
+    public Set<Object> zRevRange(Object key, int start, int end) {
         return redisTemplate.opsForZSet().reverseRange(key, start, end);
     }
     /**
@@ -498,7 +498,7 @@ public class RedisUtil {
      * @param max
      * @return
      */
-    public Set<String> zSortRange(Object key, int min, int max) {
+    public Set<Object> zSortRange(Object key, int min, int max) {
         return redisTemplate.opsForZSet().rangeByScore(key, min, max);
     }
 
@@ -666,7 +666,7 @@ public class RedisUtil {
      */
     public List<Object> keys(String key) {
         try {
-            Set<String> set = redisTemplate.keys(key);
+            Set<Object> set = redisTemplate.keys(key);
             return new ArrayList<>(set);
         } catch (Exception e) {
             e.printStackTrace();

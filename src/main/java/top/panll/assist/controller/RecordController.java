@@ -1,10 +1,14 @@
 package top.panll.assist.controller;
 
+import com.alibaba.fastjson.JSONObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import top.panll.assist.controller.bean.WVPResult;
+import top.panll.assist.dto.MergeOrCutTaskInfo;
 import top.panll.assist.service.VideoFileService;
 import top.panll.assist.utils.PageInfo;
 
@@ -105,11 +109,11 @@ public class RecordController {
      */
     @GetMapping(value = "/date/list")
     @ResponseBody
-    public WVPResult<PageInfo<String>> getDateList(@RequestParam int page,
-                                                     @RequestParam int count,
-                                                     @RequestParam String app,
-                                                     @RequestParam String stream ){
-        WVPResult<PageInfo<String>> result = new WVPResult<>();
+    public WVPResult<List<String>> getDateList( @RequestParam(required = false) Integer year,
+                                                @RequestParam(required = false) Integer month,
+                                                 @RequestParam String app,
+                                                 @RequestParam String stream ){
+        WVPResult<List<String>> result = new WVPResult<>();
         List<String> resultData = new ArrayList<>();
         if (app == null) {
             result.setCode(400);
@@ -121,15 +125,13 @@ public class RecordController {
             result.setMsg("stream不能为空");
             return result;
         }
-        List<File> dateList = videoFileService.getDateList(app, stream);
+        List<File> dateList = videoFileService.getDateList(app, stream, year, month);
         for (File file : dateList) {
             resultData.add(file.getName());
         }
         result.setCode(0);
         result.setMsg("success");
-        PageInfo<String> stringPageInfo = new PageInfo<>(resultData);
-        stringPageInfo.startPage(page, count);
-        result.setData(stringPageInfo);
+        result.setData(resultData);
         return result;
     }
 
@@ -188,7 +190,7 @@ public class RecordController {
      * @param endTime
      * @return
      */
-    @GetMapping(value = "/file/download/task")
+    @GetMapping(value = "/file/download/task/add")
     @ResponseBody
     public WVPResult<String> addTaskForDownload(@RequestParam String app,
                                       @RequestParam String stream,
@@ -210,35 +212,63 @@ public class RecordController {
         }
         String id = videoFileService.mergeOrCut(app, stream, startTimeDate, endTimeDate);
         result.setCode(0);
-        result.setMsg(id!= null?"success":"error");
+        result.setMsg(id!= null?"success":"error： 可能未找到视频文件");
         result.setData(id);
         return result;
     }
 
     /**
-     * 录制完成的通知
+     * 查询视频裁剪合并任务列表
      * @return
      */
-    @GetMapping(value = "/end")
+    @GetMapping(value = "/file/download/task/list")
     @ResponseBody
-    public WVPResult<String> recordEnd(@RequestParam String path
-    ){
-        File file = new File(path);
-        WVPResult<String> result = new WVPResult<>();
-        if (file.exists()) {
-            try {
-                videoFileService.handFile(file);
-                result.setCode(0);
-                result.setMsg("success");
-            } catch (ParseException e) {
-                e.printStackTrace();
-                result.setCode(500);
-                result.setMsg("error");
-            }
-        }else {
-            result.setCode(400);
-            result.setMsg("路径不存在");
+    public WVPResult<List<MergeOrCutTaskInfo>> getTaskListForDownload(@RequestParam Boolean isEnd){
+        if (isEnd == null) {
+            isEnd = false;
         }
+        List<MergeOrCutTaskInfo> taskList = videoFileService.getTaskListForDownload(isEnd);
+        WVPResult<List<MergeOrCutTaskInfo>> result = new WVPResult<>();
+        result.setCode(0);
+        result.setMsg(taskList !=  null?"success":"error");
+        result.setData(taskList);
         return result;
+    }
+
+    /**
+     * TODO 中止视频裁剪合并任务列表
+     * @return
+     */
+    @GetMapping(value = "/file/download/task/stop")
+    @ResponseBody
+    public WVPResult<String> stopTaskForDownload(@RequestParam String taskId){
+//        WVPResult<String> result = new WVPResult<>();
+//        if (taskId == null) {
+//            result.setCode(400);
+//            result.setMsg("taskId 不能为空");
+//            return result;
+//        }
+//        boolean stopResult = videoFileService.stopTask(taskId);
+//        result.setCode(0);
+//        result.setMsg(stopResult ? "success": "fail");
+        return null;
+    }
+
+    /**
+     * 录制完成的通知, 对用zlm的hook
+     * @return
+     */
+    @ResponseBody
+    @PostMapping(value = "/on_record_mp4", produces = "application/json;charset=UTF-8")
+    public ResponseEntity<String> onRecordMp4(@RequestBody JSONObject json) {
+        JSONObject ret = new JSONObject();
+        ret.put("code", 0);
+        ret.put("msg", "success");
+        String file_path = json.getString("file_path");
+        logger.debug("ZLM 录制完成，参数：" + file_path);
+        if (file_path == null) return new ResponseEntity<String>(ret.toString(), HttpStatus.OK);
+        videoFileService.handFile(new File(file_path));
+
+        return new ResponseEntity<String>(ret.toString(), HttpStatus.OK);
     }
 }
