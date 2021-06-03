@@ -9,11 +9,12 @@
     </parent>
     <groupId>top.panll.assist</groupId>
     <artifactId>wvp-pro-assist</artifactId>
-    <version>2.0.0</version>
+    <version>1.0.0</version>
     <name>wvp-pro-assist</name>
     <description></description>
     <properties>
         <java.version>1.8</java.version>
+        <maven.build.timestamp.format>yyyyMMddHHmmss</maven.build.timestamp.format>
 <!--        <pagehelper.version>5.2.0</pagehelper.version>-->
     </properties>
 
@@ -60,12 +61,6 @@
             <artifactId>fastjson</artifactId>
             <version>1.2.73</version>
         </dependency>
-
-<!--        <dependency>-->
-<!--            <groupId>com.github.pagehelper</groupId>-->
-<!--            <artifactId>pagehelper-spring-boot-starter</artifactId>-->
-<!--            <version>1.2.10</version>-->
-<!--        </dependency>-->
 
         <dependency>
             <groupId>org.springframework.boot</groupId>

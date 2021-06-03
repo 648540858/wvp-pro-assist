@@ -58,18 +58,29 @@ public class StartConfig implements CommandLineRunner {
             FFmpegExecUtils.getInstance().ffprobe = ffprobe;
             // 对目录进行预整理
             File[] appFiles = recordFile.listFiles();
-            for (File appFile : appFiles) {
-                File[] streamFiles = appFile.listFiles();
-                for (File streamFile : streamFiles) {
-                    File[] dateFiles = streamFile.listFiles();
-                    for (File dateFile : dateFiles) {
-                        File[] files = dateFile.listFiles();
-                        for (File file : files) {
-                            videoFileService.handFile(file);
+            if (appFiles != null && appFiles.length > 0) {
+                for (File appFile : appFiles) {
+                    File[] streamFiles = appFile.listFiles();
+                    if (streamFiles != null && streamFiles.length > 0) {
+                        for (File streamFile : streamFiles) {
+                            File[] dateFiles = streamFile.listFiles();
+                            if (dateFiles != null && dateFiles.length > 0) {
+                                for (File dateFile : dateFiles) {
+                                    File[] files = dateFile.listFiles();
+                                    if (files != null && files.length > 0) {
+                                        for (File file : files) {
+                                            videoFileService.handFile(file);
+                                        }
+                                    }
+                                }
+                            }
+
                         }
                     }
+
                 }
             }
+
         }catch (IOException exception){
             System.out.println(exception.getMessage());
             if (exception.getMessage().indexOf("ffmpeg") > 0 ) {
@@ -81,6 +92,7 @@ public class StartConfig implements CommandLineRunner {
                 System.exit(1);
             }
         }catch (Exception exception){
+            exception.printStackTrace();
             logger.error("环境错误： " + exception.getMessage());
         }
     }

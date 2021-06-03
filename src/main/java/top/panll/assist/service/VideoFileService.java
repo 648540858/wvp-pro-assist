@@ -202,8 +202,8 @@ public class VideoFileService {
                 logger.error("过滤日期文件时异常： {}-{}", name, e.getMessage());
                 return false;
             }
-            return (DateUtils.getStartOfDay(fileDate).compareTo(startDate) <= 0
-                    && DateUtils.getStartOfDay(fileDate).compareTo(endDate) >= 0) ;
+            return (DateUtils.getStartOfDay(startDate).compareTo(fileDate) <= 0
+                    || DateUtils.getEndOfDay(endDate).compareTo(fileDate) >= 0) ;
         });
 
         if (dateFiles != null && dateFiles.length > 0) {
