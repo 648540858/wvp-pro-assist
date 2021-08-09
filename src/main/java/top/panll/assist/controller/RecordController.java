@@ -1,5 +1,6 @@
 package top.panll.assist.controller;
 
+import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.JSONObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -9,6 +10,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import top.panll.assist.controller.bean.WVPResult;
 import top.panll.assist.dto.MergeOrCutTaskInfo;
+import top.panll.assist.dto.SpaceInfo;
 import top.panll.assist.service.VideoFileService;
 import top.panll.assist.utils.PageInfo;
 
@@ -270,5 +272,20 @@ public class RecordController {
         videoFileService.handFile(new File(file_path));
 
         return new ResponseEntity<String>(ret.toString(), HttpStatus.OK);
+    }
+
+    /**
+     * 磁盘空间查询
+     * @return
+     */
+    @ResponseBody
+    @GetMapping(value = "/space", produces = "application/json;charset=UTF-8")
+    public ResponseEntity<String> getSpace() {
+        JSONObject ret = new JSONObject();
+        ret.put("code", 0);
+        ret.put("msg", "success");
+        SpaceInfo spaceInfo = videoFileService.getSpaceInfo();
+        ret.put("data", JSON.toJSON(spaceInfo));
+        return new ResponseEntity<>(ret.toString(), HttpStatus.OK);
     }
 }

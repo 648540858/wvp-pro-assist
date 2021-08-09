@@ -35,6 +35,9 @@ public class StartConfig implements CommandLineRunner {
     @Override
     public void run(String... args) {
         String record = userSettings.getRecord();
+        if (!record.endsWith(File.separator)) {
+            userSettings.setRecord(userSettings.getRecord() + File.separator);
+        }
         File recordFile = new File(record);
         if (!recordFile.exists() || !recordFile.isDirectory()) {
             logger.error("[userSettings.record]配置错误，请检查路径是否存在");
