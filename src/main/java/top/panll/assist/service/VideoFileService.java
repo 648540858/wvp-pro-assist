@@ -224,7 +224,7 @@ public class VideoFileService {
                 startTimeStr, endTimeStr);
 
         File recordFile = new File(userSettings.getRecord());
-        File streamFile = new File(recordFile.getAbsolutePath() + File.separator + app + File.separator + stream);
+        File streamFile = new File(recordFile.getAbsolutePath() + File.separator + app + File.separator + stream + File.separator);
         if (!streamFile.exists()) {
             logger.warn("获取[app: {}, stream: {}, statime: {}, endTime: {}]的视频时未找到目录： {}", app, stream,
                     startTimeStr, endTimeStr, stream);
