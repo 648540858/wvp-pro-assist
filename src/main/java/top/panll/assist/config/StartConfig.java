@@ -1,11 +1,13 @@
 package top.panll.assist.config;
 
+import com.alibaba.fastjson.JSONObject;
 import net.bramp.ffmpeg.FFmpeg;
 import net.bramp.ffmpeg.FFprobe;
 import net.bramp.ffmpeg.probe.FFmpegProbeResult;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.core.annotation.Order;
 import org.springframework.stereotype.Component;
@@ -13,8 +15,9 @@ import top.panll.assist.dto.UserSettings;
 import top.panll.assist.service.FFmpegExecUtils;
 import top.panll.assist.service.VideoFileService;
 
-import java.io.File;
-import java.io.IOException;
+import java.io.*;
+import java.nio.charset.StandardCharsets;
+import java.util.Map;
 
 /**
  * 用于启动检查环境
@@ -24,6 +27,9 @@ import java.io.IOException;
 public class StartConfig implements CommandLineRunner {
 
     private final static Logger logger = LoggerFactory.getLogger(StartConfig.class);
+
+    @Value("${server.port}")
+    private String port;
 
     @Autowired
     private UserSettings userSettings;
@@ -51,6 +57,8 @@ public class StartConfig implements CommandLineRunner {
             logger.error("[userSettings.record]路径无法写入");
             System.exit(1);
         }
+        // 在zlm目录写入assist下载页面
+        writeAssistDownPage(recordFile);
         try {
             String ffmpegPath = userSettings.getFfmpeg();
             String ffprobePath = userSettings.getFfprobe();
@@ -98,5 +106,50 @@ public class StartConfig implements CommandLineRunner {
             exception.printStackTrace();
             logger.error("环境错误： " + exception.getMessage());
         }
+    }
+
+    private void writeAssistDownPage(File recordFile) {
+        try {
+            File file = new File(recordFile.getAbsolutePath(), "download.html");
+            if (file.exists()) {
+                file.delete();
+            }
+            file.createNewFile();
+            FileOutputStream fs = new FileOutputStream(file);
+            StringBuffer stringBuffer = new StringBuffer();
+            String content = "<!DOCTYPE html>\n" +
+                    "<html lang=\"en\">\n" +
+                    "<head>\n" +
+                    "    <meta charset=\"UTF-8\">\n" +
+                    "    <meta http-equiv=\"X-UA-Compatible\" content=\"IE=edge\">\n" +
+                    "    <meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\">\n" +
+                    "    <title>下载</title>\n" +
+                    "</head>\n" +
+                    "<body>\n" +
+                    "    <a id=\"download\" download />\n" +
+                    "    <script>\n" +
+                    "        (function(){\n" +
+                    "            let searchParams = new URLSearchParams(location.search);\n" +
+                    "            var download = document.getElementById(\"download\");\n" +
+                    "            download.setAttribute(\"href\", searchParams.get(\"url\"))\n" +
+                    "            download.click()\n" +
+                    "            setTimeout(()=>{\n" +
+                    "                window.location.href=\"about:blank\";\n" +
+                    "\t\t\t          window.close();\n" +
+                    "            },200)\n" +
+                    "        })();\n" +
+                    "       \n" +
+                    "    </script>\n" +
+                    "</body>\n" +
+                    "</html>";
+            fs.write(content.getBytes(StandardCharsets.UTF_8));
+            logger.error("已写入html配置页面");
+        } catch (FileNotFoundException e) {
+            logger.error("写入html页面错误", e);
+        } catch (IOException e) {
+            logger.error("写入html页面错误", e);
+        }
+
+
     }
 }
