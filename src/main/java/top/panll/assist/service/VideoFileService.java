@@ -166,22 +166,24 @@ public class VideoFileService {
         List<File> appList = getAppList();
         if (appList != null && appList.size() > 0) {
             for (File appFile : appList) {
-                List<File> streamList = getStreamList(appFile.getName());
-                if (streamList != null && streamList.size() > 0) {
-                    for (File streamFile : streamList) {
-                        Map<String, String> data = new HashMap<>();
-                        data.put("app", appFile.getName());
-                        data.put("stream", streamFile.getName());
+                if (appFile.isDirectory()) {
+                    List<File> streamList = getStreamList(appFile.getName());
+                    if (streamList != null && streamList.size() > 0) {
+                        for (File streamFile : streamList) {
+                            Map<String, String> data = new HashMap<>();
+                            data.put("app", appFile.getName());
+                            data.put("stream", streamFile.getName());
 
-                        BasicFileAttributes bAttributes = null;
-                        try {
-                            bAttributes = Files.readAttributes(streamFile.toPath(),
-                                    BasicFileAttributes.class);
-                        } catch (IOException e) {
-                            e.printStackTrace();
+                            BasicFileAttributes bAttributes = null;
+                            try {
+                                bAttributes = Files.readAttributes(streamFile.toPath(),
+                                        BasicFileAttributes.class);
+                            } catch (IOException e) {
+                                e.printStackTrace();
+                            }
+                            data.put("time", simpleDateFormatForTime.format(new Date(bAttributes.lastModifiedTime().toMillis())));
+                            result.add(data);
                         }
-                        data.put("time", simpleDateFormatForTime.format(new Date(bAttributes.lastModifiedTime().toMillis())));
-                        result.add(data);
                     }
                 }
             }

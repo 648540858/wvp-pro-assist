@@ -143,7 +143,7 @@ public class StartConfig implements CommandLineRunner {
                     "</body>\n" +
                     "</html>";
             fs.write(content.getBytes(StandardCharsets.UTF_8));
-            logger.error("已写入html配置页面");
+            logger.info("已写入html配置页面");
         } catch (FileNotFoundException e) {
             logger.error("写入html页面错误", e);
         } catch (IOException e) {
