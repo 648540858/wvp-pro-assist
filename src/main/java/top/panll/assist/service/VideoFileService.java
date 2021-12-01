@@ -40,7 +40,7 @@ public class VideoFileService {
     private RedisTemplate redisTemplate;
 
     @Autowired
-    private FFmpegExecUtils fFmpegExecUtils;
+    private FFmpegExecUtils ffmpegExecUtils;
 
 
 
@@ -49,12 +49,14 @@ public class VideoFileService {
 
     private final String keyStr = "MERGEORCUT";
 
-    public List<File> getAppList() {
+    public List<File> getAppList(Boolean sort) {
         File recordFile = new File(userSettings.getRecord());
-        if (recordFile != null) {
+        if (recordFile != null && recordFile.isDirectory()) {
             File[] files = recordFile.listFiles();
             List<File> result = Arrays.asList(files);
-            Collections.sort(result);
+            if (sort != null && sort) {
+                Collections.sort(result);
+            }
             return result;
         }else {
             return null;
@@ -98,12 +100,18 @@ public class VideoFileService {
 //        }
 //    }
 
-    public List<File> getStreamList(String app) {
+    public List<File> getStreamList(String app, Boolean sort) {
         File appFile = new File(userSettings.getRecord() + File.separator + app);
-        if (appFile != null) {
+        return getStreamList(appFile, sort);
+    }
+
+    public List<File> getStreamList(File appFile, Boolean sort) {
+        if (appFile != null && appFile.isDirectory()) {
             File[] files = appFile.listFiles();
             List<File> result = Arrays.asList(files);
-            Collections.sort(result);
+            if (sort != null && sort) {
+                Collections.sort(result);
+            }
             return result;
         }else {
             return null;
@@ -116,7 +124,7 @@ public class VideoFileService {
      * @throws ParseException
      */
     public void handFile(File file) {
-        FFprobe ffprobe = fFmpegExecUtils.ffprobe;
+        FFprobe ffprobe = ffmpegExecUtils.getFfprobe();
         if(file.exists() && file.isFile() && !file.getName().startsWith(".")&& file.getName().endsWith(".mp4") && file.getName().indexOf(":") < 0) {
             try {
                 FFmpegProbeResult in = null;
@@ -137,7 +145,7 @@ public class VideoFileService {
                 String newName = file.getAbsolutePath().replace(file.getName(),
                         simpleDateFormat.format(startTime) + "-" + simpleDateFormat.format(endTime) + "-" + durationLong + ".mp4");
                 file.renameTo(new File(newName));
-                System.out.println(newName);
+                logger.debug("[处理文件] {}", file.getName());
             } catch (IOException e) {
                 logger.warn("文件可能以损坏[{}]", file.getAbsolutePath());
 //                e.printStackTrace();
@@ -151,11 +159,11 @@ public class VideoFileService {
 
         List<Map<String, String>> result = new ArrayList<>();
 
-        List<File> appList = getAppList();
+        List<File> appList = getAppList(true);
         if (appList != null && appList.size() > 0) {
             for (File appFile : appList) {
                 if (appFile.isDirectory()) {
-                    List<File> streamList = getStreamList(appFile.getName());
+                    List<File> streamList = getStreamList(appFile.getName(), true);
                     if (streamList != null && streamList.size() > 0) {
                         for (File streamFile : streamList) {
                             Map<String, String> data = new HashMap<>();
@@ -340,7 +348,7 @@ public class VideoFileService {
             mergeOrCutTaskInfo.setEndTime(endTimeInFile);
         }
 
-        fFmpegExecUtils.mergeOrCutFile(filesInTime, recordFile, stream, (status, percentage, result)->{
+        ffmpegExecUtils.mergeOrCutFile(filesInTime, recordFile, stream, (status, percentage, result)->{
             // 发出redis通知
             if (status.equals(Progress.Status.END.name())) {
                 mergeOrCutTaskInfo.setPercentage("1");
@@ -363,11 +371,22 @@ public class VideoFileService {
         return taskId;
     }
 
-    public List<File> getDateList(String app, String stream, Integer year, Integer month) {
+    /**
+     * 获取指定时间的日期文件夹
+     * @param app
+     * @param stream
+     * @param year
+     * @param month
+     * @return
+     */
+    public List<File> getDateList(String app, String stream, Integer year, Integer month, Boolean sort) {
         File recordFile = new File(userSettings.getRecord());
         File streamFile = new File(recordFile.getAbsolutePath() + File.separator + app + File.separator + stream);
-        if (!streamFile.exists()) {
-            logger.warn("获取[app: {}, stream: {}]的视频时未找到目录： {}", app, stream, stream);
+        return getDateList(streamFile, year, month, sort);
+    }
+    public List<File> getDateList(File streamFile, Integer year, Integer month, Boolean sort) {
+        if (!streamFile.exists() && streamFile.isDirectory()) {
+            logger.warn("获取[]的视频时未找到目录： {}",streamFile.getName());
             return null;
         }
         File[] dateFiles = streamFile.listFiles((File dir, String name)->{
@@ -393,17 +412,19 @@ public class VideoFileService {
 
         });
         List<File> dateFileList = Arrays.asList(dateFiles);
+        if (sort != null && sort) {
+            dateFileList.sort((File f1, File f2)->{
+                int sortResult = 0;
 
-        dateFileList.sort((File f1, File f2)->{
-            int sortResult = 0;
+                try {
+                    sortResult = simpleDateFormat.parse(f1.getName()).compareTo(simpleDateFormat.parse(f2.getName()));
+                } catch (ParseException e) {
+                    logger.error("格式化时间{}/{}错误", f1.getName(), f2.getName());
+                }
+                return sortResult;
+            });
+        }
 
-            try {
-                sortResult = simpleDateFormat.parse(f1.getName()).compareTo(simpleDateFormat.parse(f2.getName()));
-            } catch (ParseException e) {
-                logger.error("格式化时间{}/{}错误", f1.getName(), f2.getName());
-            }
-            return sortResult;
-        });
         return dateFileList;
     }
 

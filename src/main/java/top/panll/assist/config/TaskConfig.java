@@ -31,13 +31,13 @@ public class TaskConfig {
     @Scheduled(cron = "0 0 0 * * ?")
     private void configureTasks() {
         logger.info("录像过期自检任务执行");
-        List<File> appList = videoFileService.getAppList();
+        List<File> appList = videoFileService.getAppList(false);
         Calendar calendar = Calendar.getInstance();
         calendar.add(Calendar.DATE, - 7);
         Date monday = calendar.getTime();
         if (appList != null && appList.size() > 0) {
             for (File appFile : appList) {
-                List<File> streamList = videoFileService.getStreamList(appFile.getName());
+                List<File> streamList = videoFileService.getStreamList(appFile.getName(), false);
                 if (streamList != null && streamList.size() > 0) {
                     for (File streamFile : streamList) {
                         File[] recordDateFileList = streamFile.listFiles();

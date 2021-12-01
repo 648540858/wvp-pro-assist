@@ -79,9 +79,11 @@ public class RecordController {
                                                   @RequestParam int count){
         WVPResult<PageInfo<String>> result = new WVPResult<>();
         List<String> resultData = new ArrayList<>();
-        List<File> appList = videoFileService.getAppList();
-        for (File file : appList) {
-            resultData.add(file.getName());
+        List<File> appList = videoFileService.getAppList(true);
+        if (appList != null) {
+            for (File file : appList) {
+                resultData.add(file.getName());
+            }
         }
         result.setCode(0);
         result.setMsg("success");
@@ -114,9 +116,11 @@ public class RecordController {
             result.setMsg("app不能为空");
             return result;
         }
-        List<File> streamList = videoFileService.getStreamList(app);
-        for (File file : streamList) {
-            resultData.add(file.getName());
+        List<File> streamList = videoFileService.getStreamList(app, true);
+        if (streamList != null) {
+            for (File file : streamList) {
+                resultData.add(file.getName());
+            }
         }
         result.setCode(0);
         result.setMsg("success");
@@ -155,7 +159,7 @@ public class RecordController {
             result.setMsg("stream不能为空");
             return result;
         }
-        List<File> dateList = videoFileService.getDateList(app, stream, year, month);
+        List<File> dateList = videoFileService.getDateList(app, stream, year, month, true);
         for (File file : dateList) {
             resultData.add(file.getName());
         }

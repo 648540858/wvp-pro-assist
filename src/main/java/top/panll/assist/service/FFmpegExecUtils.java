@@ -52,8 +52,16 @@ public class FFmpegExecUtils implements InitializingBean{
     @Autowired
     private RedisUtil redisUtil;
 
-    public FFprobe ffprobe;
-    public FFmpeg ffmpeg;
+    private FFprobe ffprobe;
+    private FFmpeg ffmpeg;
+
+    public FFprobe getFfprobe() {
+        return ffprobe;
+    }
+
+    public FFmpeg getFfmpeg() {
+        return ffmpeg;
+    }
 
     @Override
     public void afterPropertiesSet() throws Exception {
