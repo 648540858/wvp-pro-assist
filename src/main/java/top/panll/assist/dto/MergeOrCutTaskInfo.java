@@ -4,14 +4,19 @@ import java.util.Date;
 
 public class MergeOrCutTaskInfo {
     private String id;
-    private String startTime;
-    private String endTime;
     private String app;
     private String stream;
+    private String startTime;
+    private String endTime;
+    private String createTime;
 
     private String percentage;
 
     private String recordFile;
+
+    private String downloadFile;
+
+    private String playFile;
 
     public String getId() {
         return id;
@@ -67,5 +72,29 @@ public class MergeOrCutTaskInfo {
 
     public void setRecordFile(String recordFile) {
         this.recordFile = recordFile;
+    }
+
+    public String getDownloadFile() {
+        return downloadFile;
+    }
+
+    public void setDownloadFile(String downloadFile) {
+        this.downloadFile = downloadFile;
+    }
+
+    public String getPlayFile() {
+        return playFile;
+    }
+
+    public void setPlayFile(String playFile) {
+        this.playFile = playFile;
+    }
+
+    public String getCreateTime() {
+        return createTime;
+    }
+
+    public void setCreateTime(String createTime) {
+        this.createTime = createTime;
     }
 }

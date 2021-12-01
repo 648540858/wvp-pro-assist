@@ -1,5 +1,6 @@
 package top.panll.assist.utils;
 
+import com.alibaba.fastjson.JSONObject;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.redis.core.*;
 import org.springframework.stereotype.Component;
@@ -36,6 +37,7 @@ public class RedisUtil {
             e.printStackTrace();
             return false;
         }
+
     }
 
     /**
@@ -105,7 +107,7 @@ public class RedisUtil {
             redisTemplate.opsForValue().set(key, value);
             return true;
         } catch (Exception e) {
-            e.printStackTrace();
+//            e.printStackTrace();
             return false;
         }
     }
@@ -729,4 +731,7 @@ public class RedisUtil {
         return new ArrayList<>(keys);
     }
 
+    public void convertAndSend(String channel, Object msg) {
+//        redisTemplate.convertAndSend(channel, msg);
+    }
 }

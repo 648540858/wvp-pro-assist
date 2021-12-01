@@ -1,9 +1,7 @@
 package top.panll.assist.config;
 
-import com.alibaba.fastjson.JSONObject;
 import net.bramp.ffmpeg.FFmpeg;
 import net.bramp.ffmpeg.FFprobe;
-import net.bramp.ffmpeg.probe.FFmpegProbeResult;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -17,7 +15,6 @@ import top.panll.assist.service.VideoFileService;
 
 import java.io.*;
 import java.nio.charset.StandardCharsets;
-import java.util.Map;
 
 /**
  * 用于启动检查环境
@@ -60,13 +57,9 @@ public class StartConfig implements CommandLineRunner {
         // 在zlm目录写入assist下载页面
         writeAssistDownPage(recordFile);
         try {
-            String ffmpegPath = userSettings.getFfmpeg();
-            String ffprobePath = userSettings.getFfprobe();
-            FFmpeg ffmpeg = new FFmpeg(ffmpegPath);
-            FFprobe ffprobe = new FFprobe(ffprobePath);
-            logger.info("wvp-pro辅助程序启动成功。 \n{}\n{} ", ffmpeg.version(), ffprobe.version());
-            FFmpegExecUtils.getInstance().ffmpeg = ffmpeg;
-            FFmpegExecUtils.getInstance().ffprobe = ffprobe;
+
+//            FFmpegExecUtils.getInstance().ffmpeg = ffmpeg;
+//            FFmpegExecUtils.getInstance().ffprobe = ffprobe;
             // 对目录进行预整理
             File[] appFiles = recordFile.listFiles();
             if (appFiles != null && appFiles.length > 0) {
@@ -92,17 +85,7 @@ public class StartConfig implements CommandLineRunner {
                 }
             }
 
-        }catch (IOException exception){
-            System.out.println(exception.getMessage());
-            if (exception.getMessage().indexOf("ffmpeg") > 0 ) {
-                logger.error("[userSettings.ffmpeg]配置错误，请检查是否已安装ffmpeg并正确配置");
-                System.exit(1);
-            }
-            if (exception.getMessage().indexOf("ffprobe") > 0 ) {
-                logger.error("[userSettings.ffprobe]配置错误，请检查是否已安装ffprobe并正确配置");
-                System.exit(1);
-            }
-        }catch (Exception exception){
+        } catch (Exception exception){
             exception.printStackTrace();
             logger.error("环境错误： " + exception.getMessage());
         }

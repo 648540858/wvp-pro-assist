@@ -9,49 +9,73 @@ import net.bramp.ffmpeg.job.FFmpegJob;
 import net.bramp.ffmpeg.probe.FFmpegProbeResult;
 import net.bramp.ffmpeg.progress.Progress;
 import net.bramp.ffmpeg.progress.ProgressListener;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.InitializingBean;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.scheduling.annotation.Async;
+import org.springframework.stereotype.Component;
 import org.springframework.util.DigestUtils;
+import top.panll.assist.dto.UserSettings;
+import top.panll.assist.utils.RedisUtil;
 
 import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.nio.file.Paths;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 
-public class FFmpegExecUtils {
+@Component
+public class FFmpegExecUtils implements InitializingBean{
 
-    private static FFmpegExecUtils instance;
+    private final static Logger logger = LoggerFactory.getLogger(FFmpegExecUtils.class);
+//    private static FFmpegExecUtils instance;
+//
+//    public FFmpegExecUtils() {
+//    }
+//
+//    public static FFmpegExecUtils getInstance(){
+//        if(instance==null){
+//            synchronized (FFmpegExecUtils.class){
+//                if(instance==null){
+//                    instance=new FFmpegExecUtils();
+//                }
+//            }
+//        }
+//        return instance;
+//    }
+    @Autowired
+    private UserSettings userSettings;
 
-    public FFmpegExecUtils() {
-    }
-
-    public static FFmpegExecUtils getInstance(){
-        if(instance==null){
-            synchronized (FFmpegExecUtils.class){
-                if(instance==null){
-                    instance=new FFmpegExecUtils();
-                }
-            }
-        }
-        return instance;
-    }
+    @Autowired
+    private RedisUtil redisUtil;
 
     public FFprobe ffprobe;
     public FFmpeg ffmpeg;
+
+    @Override
+    public void afterPropertiesSet() throws Exception {
+        String ffmpegPath = userSettings.getFfmpeg();
+        String ffprobePath = userSettings.getFfprobe();
+        this.ffmpeg = new FFmpeg(ffmpegPath);
+        this.ffprobe = new FFprobe(ffprobePath);
+        logger.info("wvp-pro辅助程序启动成功。 \n{}\n{} ", this.ffmpeg.version(), this.ffprobe.version());
+    }
 
     public interface VideoHandEndCallBack {
         void run(String status, double percentage, String result);
     }
 
-    public String mergeOrCutFile(List<File> fils, File dest, String temp, VideoHandEndCallBack callBack){
-        FFmpeg ffmpeg = FFmpegExecUtils.getInstance().ffmpeg;
-        FFprobe ffprobe = FFmpegExecUtils.getInstance().ffprobe;
+    @Async
+    public void mergeOrCutFile(List<File> fils, File dest,  String destFileName, VideoHandEndCallBack callBack){
         if (fils == null || fils.size() == 0 || ffmpeg == null || ffprobe == null || dest== null || !dest.exists()){
             callBack.run("error", 0.0, null);
-            return null;
+            return;
         }
 
-        File tempFile = new File(dest.getAbsolutePath() + File.separator + temp);
+        File tempFile = new File(dest.getAbsolutePath());
         if (!tempFile.exists()) {
             tempFile.mkdirs();
         }
@@ -75,7 +99,7 @@ public class FFmpegExecUtils {
             e.printStackTrace();
             callBack.run("error", 0.0, null);
         }
-        String recordFileResultPath = dest.getAbsolutePath() + File.separator + temp + File.separator + "record.mp4";
+        String recordFileResultPath = dest.getAbsolutePath() + File.separator + destFileName + ".mp4";
         long startTime = System.currentTimeMillis();
         FFmpegBuilder builder = new FFmpegBuilder()
 
@@ -85,6 +109,7 @@ public class FFmpegExecUtils {
                 .addExtraArgs("-safe", "0")
                 .addOutput(recordFileResultPath)
                 .setVideoCodec("copy")
+                .setAudioCodec("copy")
                 .setFormat("mp4")
                 .done();
 
@@ -94,25 +119,24 @@ public class FFmpegExecUtils {
             double percentage = progress.out_time_ns / duration_ns;
 
             // Print out interesting information about the progress
-//            System.out.println(String.format(
-//                    "[%.0f%%] status:%s frame:%d time:%s ms fps:%.0f speed:%.2fx",
-//                    percentage * 100,
-//                    progress.status,
-//                    progress.frame,
-//                    FFmpegUtils.toTimecode(progress.out_time_ns, TimeUnit.NANOSECONDS),
-//                    progress.fps.doubleValue(),
-//                    progress.speed
-//            ));
+            System.out.println(String.format(
+                    "[%.0f%%] status:%s frame:%d time:%s ms fps:%.0f speed:%.2fx",
+                    percentage * 100,
+                    progress.status,
+                    progress.frame,
+                    FFmpegUtils.toTimecode(progress.out_time_ns, TimeUnit.NANOSECONDS),
+                    progress.fps.doubleValue(),
+                    progress.speed
+            ));
 
             if (progress.status.equals(Progress.Status.END)){
-                callBack.run(progress.status.name(), percentage,dest.getName() + File.separator + temp + File.separator + "record.mp4");
-                System.out.println(System.currentTimeMillis() - startTime);
+                callBack.run(progress.status.name(), percentage, recordFileResultPath);
             }else {
                 callBack.run(progress.status.name(), percentage, null);
             }
+
         });
         job.run();
-        return temp;
     }
 
 }

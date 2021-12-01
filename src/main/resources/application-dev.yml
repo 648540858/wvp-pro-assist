@@ -37,7 +37,8 @@ userSettings:
     # [必选 ] ffprobe路径， 一般安装ffmpeg就会自带， 一般跟ffmpeg在同一目录,用于查询文件的信息
     ffprobe: /usr/bin/ffprobe
 
-
+swagger-ui:
+    enabled: true
 # [可选] 日志配置, 一般不需要改
 logging:
     file:

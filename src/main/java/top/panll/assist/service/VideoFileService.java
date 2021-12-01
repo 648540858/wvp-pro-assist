@@ -1,14 +1,12 @@
 package top.panll.assist.service;
 
-import com.alibaba.fastjson.JSONObject;
 import net.bramp.ffmpeg.FFprobe;
 import net.bramp.ffmpeg.probe.FFmpegProbeResult;
 import net.bramp.ffmpeg.progress.Progress;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.context.annotation.Bean;
-import org.springframework.data.redis.core.StringRedisTemplate;
+import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.util.DigestUtils;
 import top.panll.assist.dto.SpaceInfo;
@@ -20,13 +18,12 @@ import top.panll.assist.utils.DateUtils;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.nio.file.attribute.BasicFileAttributes;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.*;
-import java.util.concurrent.LinkedBlockingQueue;
-import java.util.concurrent.ThreadPoolExecutor;
-import java.util.concurrent.TimeUnit;
 
 @Service
 public class VideoFileService {
@@ -40,26 +37,17 @@ public class VideoFileService {
     private RedisUtil redisUtil;
 
     @Autowired
-    private StringRedisTemplate stringRedisTemplate;
+    private RedisTemplate redisTemplate;
 
-    private ThreadPoolExecutor processThreadPool;
+    @Autowired
+    private FFmpegExecUtils fFmpegExecUtils;
 
-    private SimpleDateFormat simpleDateFormat = new SimpleDateFormat("yyyy-MM-dd");
-    private SimpleDateFormat simpleDateFormatForTime = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
 
-    private String keyStr = "MERGEORCUT";
 
-    @Bean("threadPoolExecutor")
-    private ThreadPoolExecutor iniThreadPool() {
+    private final SimpleDateFormat simpleDateFormat = new SimpleDateFormat("yyyy-MM-dd");
+    private final SimpleDateFormat simpleDateFormatForTime = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
 
-        int processThreadNum = Runtime.getRuntime().availableProcessors() * 10;
-        LinkedBlockingQueue<Runnable> processQueue = new LinkedBlockingQueue<Runnable>(10000);
-        processThreadPool = new ThreadPoolExecutor(processThreadNum,processThreadNum,
-                0L, TimeUnit.MILLISECONDS,processQueue,
-                new ThreadPoolExecutor.CallerRunsPolicy());
-        return processThreadPool;
-    }
-
+    private final String keyStr = "MERGEORCUT";
 
     public List<File> getAppList() {
         File recordFile = new File(userSettings.getRecord());
@@ -128,7 +116,7 @@ public class VideoFileService {
      * @throws ParseException
      */
     public void handFile(File file) {
-        FFprobe ffprobe = FFmpegExecUtils.getInstance().ffprobe;
+        FFprobe ffprobe = fFmpegExecUtils.ffprobe;
         if(file.exists() && file.isFile() && !file.getName().startsWith(".")&& file.getName().endsWith(".mp4") && file.getName().indexOf(":") < 0) {
             try {
                 FFmpegProbeResult in = null;
@@ -213,15 +201,21 @@ public class VideoFileService {
     public List<File> getFilesInTime(String app, String stream, Date startTime, Date endTime){
 
         List<File> result = new ArrayList<>();
-
         if (app == null || stream == null) {
             return result;
         }
 
         SimpleDateFormat formatter = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
         SimpleDateFormat formatterForDate = new SimpleDateFormat("yyyy-MM-dd");
-        String startTimeStr = formatter.format(startTime);
-        String endTimeStr = formatter.format(endTime);
+        String startTimeStr = null;
+        String endTimeStr = null;
+        if (startTime != null) {
+            startTimeStr = formatter.format(startTime);
+        }
+        if (endTime != null) {
+            endTimeStr = formatter.format(endTime);
+        }
+
         logger.debug("获取[app: {}, stream: {}, statime: {}, endTime: {}]的视频", app, stream,
                 startTimeStr, endTimeStr);
 
@@ -230,34 +224,56 @@ public class VideoFileService {
         if (!streamFile.exists()) {
             logger.warn("获取[app: {}, stream: {}, statime: {}, endTime: {}]的视频时未找到目录： {}", app, stream,
                     startTimeStr, endTimeStr, stream);
-            return result;
+            return null;
         }
+
         File[] dateFiles = streamFile.listFiles((File dir, String name) -> {
             Date fileDate = null;
-            Date startDate = new Date(startTime.getTime() - ((startTime.getTime() + 28800000) % (86400000)));
-            Date endDate = new Date(endTime.getTime() - ((endTime.getTime() + 28800000) % (86400000)));
+            Date startDate = null;
+            Date endDate = null;
+            if (startTime != null) {
+                startDate = new Date(startTime.getTime() - ((startTime.getTime() + 28800000) % (86400000)));
+            }
+            if (endTime != null) {
+                endDate = new Date(endTime.getTime() - ((endTime.getTime() + 28800000) % (86400000)));
+            }
             try {
                 fileDate = formatterForDate.parse(name);
             } catch (ParseException e) {
                 logger.error("过滤日期文件时异常： {}-{}", name, e.getMessage());
                 return false;
             }
-            return (DateUtils.getStartOfDay(startDate).compareTo(fileDate) <= 0
-                    || DateUtils.getEndOfDay(endDate).compareTo(fileDate) >= 0) ;
+            boolean filterResult = true;
+
+            if (startDate != null) {
+                filterResult = filterResult &&  DateUtils.getStartOfDay(startDate).compareTo(fileDate) <= 0;
+            }
+
+            if (endDate != null) {
+                filterResult = filterResult &&  DateUtils.getEndOfDay(endDate).compareTo(fileDate) >= 0;
+            }
+
+            return filterResult ;
         });
 
         if (dateFiles != null && dateFiles.length > 0) {
             for (File dateFile : dateFiles) {
                 // TODO 按时间获取文件
                 File[] files = dateFile.listFiles((File dir, String name) ->{
-                    boolean filterResult = false;
+                    boolean filterResult = true;
                     if (name.contains(":") && name.endsWith(".mp4") && !name.startsWith(".")){
                         String[] timeArray = name.split("-");
                         if (timeArray.length == 3){
                             String fileStartTimeStr = dateFile.getName() + " " + timeArray[0];
                             String fileEndTimeStr = dateFile.getName() + " " + timeArray[1];
                             try {
-                                filterResult = formatter.parse(fileStartTimeStr).after(startTime) && formatter.parse(fileEndTimeStr).before(endTime);
+                                if (startTime != null) {
+                                    filterResult = filterResult &&  (formatter.parse(fileStartTimeStr).after(startTime) || (formatter.parse(fileStartTimeStr).before(startTime) && formatter.parse(fileEndTimeStr).after(startTime)));
+                                }
+                                if (endTime != null) {
+                                    filterResult = filterResult &&  (formatter.parse(fileEndTimeStr).before(endTime) || (formatter.parse(fileEndTimeStr).after(endTime) && formatter.parse(fileStartTimeStr).before(endTime)));
+                                }
+
                             } catch (ParseException e) {
                                 logger.error("过滤视频文件时异常： {}-{}", name, e.getMessage());
                                 return false;
@@ -294,43 +310,58 @@ public class VideoFileService {
     }
 
 
-    public String mergeOrCut(String app, String stream, Date startTime, Date endTime) {
+    public String mergeOrCut(String app, String stream, Date startTime, Date endTime, String remoteHost) {
         List<File> filesInTime = this.getFilesInTime(app, stream, startTime, endTime);
         if (filesInTime== null || filesInTime.size() == 0){
             logger.info("此时间段未未找到视频文件");
             return null;
         }
-        File recordFile = new File(new File(userSettings.getRecord()).getParentFile().getAbsolutePath()  + File.separator + "recordTemp");
-        if (!recordFile.exists()) recordFile.mkdirs();
-
         String taskId = DigestUtils.md5DigestAsHex(String.valueOf(System.currentTimeMillis()).getBytes());
+        String destDir = "recordTemp" + File.separator + taskId + File.separator + app;
+        File recordFile = new File(new File(userSettings.getRecord()).getParentFile().getAbsolutePath()  + File.separator + destDir );
+        if (!recordFile.exists()) recordFile.mkdirs();
         MergeOrCutTaskInfo mergeOrCutTaskInfo = new MergeOrCutTaskInfo();
         mergeOrCutTaskInfo.setId(taskId);
         mergeOrCutTaskInfo.setApp(app);
         mergeOrCutTaskInfo.setStream(stream);
-        mergeOrCutTaskInfo.setStartTime(simpleDateFormatForTime.format(startTime));
-        mergeOrCutTaskInfo.setEndTime(simpleDateFormatForTime.format(endTime));
+        mergeOrCutTaskInfo.setCreateTime(simpleDateFormatForTime.format(System.currentTimeMillis()));
+        if(startTime != null) {
+            mergeOrCutTaskInfo.setStartTime(simpleDateFormatForTime.format(startTime));
+        }else {
+            String startTimeInFile = filesInTime.get(0).getParentFile().getName() + " "
+                    + filesInTime.get(0).getName().split("-")[0];
+            mergeOrCutTaskInfo.setStartTime(startTimeInFile);
+        }
+        if(endTime != null) {
+            mergeOrCutTaskInfo.setEndTime(simpleDateFormatForTime.format(endTime));
+        }else {
+            String endTimeInFile = filesInTime.get(filesInTime.size()- 1).getParentFile().getName() + " "
+                    + filesInTime.get(filesInTime.size()- 1).getName().split("-")[1];
+            mergeOrCutTaskInfo.setEndTime(endTimeInFile);
+        }
 
-        Runnable task = () -> {
-            FFmpegExecUtils.getInstance().mergeOrCutFile(filesInTime, recordFile, taskId, (String status, double percentage, String result)->{
+        fFmpegExecUtils.mergeOrCutFile(filesInTime, recordFile, stream, (status, percentage, result)->{
+            // 发出redis通知
+            if (status.equals(Progress.Status.END.name())) {
+                mergeOrCutTaskInfo.setPercentage("1");
 
-                // 发出redis通知
-                if (status.equals(Progress.Status.END.name())) {
-                    mergeOrCutTaskInfo.setPercentage("1");
-                    mergeOrCutTaskInfo.setRecordFile(result);
-                    stringRedisTemplate.convertAndSend("topic_mergeorcut_end", JSONObject.toJSONString(mergeOrCutTaskInfo));
-                }else {
-                    mergeOrCutTaskInfo.setPercentage(percentage + "");
-                    stringRedisTemplate.convertAndSend("topic_mergeorcut_continue",  JSONObject.toJSONString(mergeOrCutTaskInfo));
+                // 处理文件路径
+                Path relativize = Paths.get(userSettings.getRecord()).getParent().relativize(Paths.get(result));
+                mergeOrCutTaskInfo.setRecordFile(relativize.toString());
+                if (remoteHost != null) {
+                    mergeOrCutTaskInfo.setDownloadFile(remoteHost + "/record/download.html?url=../" + relativize);
+                    mergeOrCutTaskInfo.setPlayFile(remoteHost + "/" + relativize);
                 }
-                String key = String.format("%S_%S_%S_%S", keyStr, app, stream, taskId);
-                redisUtil.set(key, mergeOrCutTaskInfo);
-            });
-        };
-        processThreadPool.execute(task);
+                redisUtil.convertAndSend("topic_mergeorcut_end", mergeOrCutTaskInfo);
+            }else {
+                mergeOrCutTaskInfo.setPercentage(percentage + "");
+                redisUtil.convertAndSend("topic_mergeorcut_continue",  mergeOrCutTaskInfo);
+            }
+            String key = String.format("%S_%S_%S_%S", keyStr, mergeOrCutTaskInfo.getApp(), mergeOrCutTaskInfo.getStream(), mergeOrCutTaskInfo.getId());
+            redisUtil.set(key, mergeOrCutTaskInfo);
+        });
         return taskId;
     }
-
 
     public List<File> getDateList(String app, String stream, Integer year, Integer month) {
         File recordFile = new File(userSettings.getRecord());
@@ -376,28 +407,39 @@ public class VideoFileService {
         return dateFileList;
     }
 
-    public List<MergeOrCutTaskInfo> getTaskListForDownload(boolean idEnd) {
+    public List<MergeOrCutTaskInfo> getTaskListForDownload(Boolean idEnd, String app, String stream, String taskId) {
         ArrayList<MergeOrCutTaskInfo> result = new ArrayList<>();
-        List<Object> taskCatch = redisUtil.scan(String.format("%S_*_*_*", keyStr));
+        if (app == null) app = "*";
+        if (stream == null) stream = "*";
+        if (taskId == null) taskId = "*";
+        List<Object> taskCatch = redisUtil.scan(String.format("%S_%S_%S_%S", keyStr, app, stream, taskId));
         for (int i = 0; i < taskCatch.size(); i++) {
             String keyItem = taskCatch.get(i).toString();
             MergeOrCutTaskInfo mergeOrCutTaskInfo = (MergeOrCutTaskInfo)redisUtil.get(keyItem);
-            if (mergeOrCutTaskInfo != null){
-                if (idEnd) {
-                    if (Double.parseDouble(mergeOrCutTaskInfo.getPercentage()) == 1){
-                        result.add(mergeOrCutTaskInfo);
+            if (mergeOrCutTaskInfo != null && mergeOrCutTaskInfo.getPercentage() != null){
+                if (idEnd != null ) {
+                    if (idEnd) {
+                        if (Double.parseDouble(mergeOrCutTaskInfo.getPercentage()) == 1){
+                            result.add(mergeOrCutTaskInfo);
+                        }
+                    }else {
+                        if (Double.parseDouble(mergeOrCutTaskInfo.getPercentage()) < 1){
+                            result.add((MergeOrCutTaskInfo)redisUtil.get(keyItem));
+                        }
                     }
                 }else {
-                    if (Double.parseDouble(mergeOrCutTaskInfo.getPercentage()) < 1){
-                        result.add((MergeOrCutTaskInfo)redisUtil.get(keyItem));
-                    }
+                    result.add((MergeOrCutTaskInfo)redisUtil.get(keyItem));
                 }
+
             }
         }
         result.sort((MergeOrCutTaskInfo m1, MergeOrCutTaskInfo m2)->{
             int sortResult = 0;
             try {
-                sortResult = simpleDateFormatForTime.parse(m1.getStartTime()).compareTo(simpleDateFormatForTime.parse(m2.getStartTime()));
+                sortResult = simpleDateFormatForTime.parse(m1.getCreateTime()).compareTo(simpleDateFormatForTime.parse(m2.getCreateTime()));
+                if (sortResult == 0) {
+                    sortResult = simpleDateFormatForTime.parse(m1.getStartTime()).compareTo(simpleDateFormatForTime.parse(m2.getStartTime()));
+                }
                 if (sortResult == 0) {
                     sortResult = simpleDateFormatForTime.parse(m1.getEndTime()).compareTo(simpleDateFormatForTime.parse(m2.getEndTime()));
                 }
@@ -406,6 +448,7 @@ public class VideoFileService {
             }
             return sortResult * -1;
         });
+
         return result;
     }
 
