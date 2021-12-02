@@ -52,7 +52,10 @@ public class VideoFileService {
     public List<File> getAppList(Boolean sort) {
         File recordFile = new File(userSettings.getRecord());
         if (recordFile != null && recordFile.isDirectory()) {
-            File[] files = recordFile.listFiles();
+            File[] files = recordFile.listFiles((File dir, String name) -> {
+                File currentFile = new File(dir.getAbsolutePath() + File.separator + name);
+                return  currentFile.isDirectory();
+            });
             List<File> result = Arrays.asList(files);
             if (sort != null && sort) {
                 Collections.sort(result);
@@ -107,7 +110,10 @@ public class VideoFileService {
 
     public List<File> getStreamList(File appFile, Boolean sort) {
         if (appFile != null && appFile.isDirectory()) {
-            File[] files = appFile.listFiles();
+            File[] files = appFile.listFiles((File dir, String name) -> {
+                File currentFile = new File(dir.getAbsolutePath() + File.separator + name);
+                return  currentFile.isDirectory();
+            });
             List<File> result = Arrays.asList(files);
             if (sort != null && sort) {
                 Collections.sort(result);
@@ -390,6 +396,10 @@ public class VideoFileService {
             return null;
         }
         File[] dateFiles = streamFile.listFiles((File dir, String name)->{
+            File currentFile = new File(dir.getAbsolutePath() + File.separator + name);
+            if (currentFile.isDirectory()){
+                return false;
+            }
             Date date = null;
             try {
                 date = simpleDateFormat.parse(name);

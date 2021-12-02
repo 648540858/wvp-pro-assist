@@ -32,6 +32,8 @@ userSettings:
     record: /media/lin/Server/ZLMediaKit/dev/ZLMediaKit/release/linux/Debug/www/record
     # [可选 ] 录像保存时长（单位： 天）每天晚12点自动对过期文件执行清理
     recordDay: 7
+    # [可选 ] 录像下载合成临时文件保存时长， 不配置默认取值recordDay（单位： 天）每天晚12点自动对过期文件执行清理
+    # recordTempDay: 7
     # [必选 ] ffmpeg路径
     ffmpeg: /usr/bin/ffmpeg
     # [必选 ] ffprobe路径， 一般安装ffmpeg就会自带， 一般跟ffmpeg在同一目录,用于查询文件的信息
