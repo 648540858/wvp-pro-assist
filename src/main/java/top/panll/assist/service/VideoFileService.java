@@ -3,12 +3,14 @@ package top.panll.assist.service;
 import net.bramp.ffmpeg.FFprobe;
 import net.bramp.ffmpeg.probe.FFmpegProbeResult;
 import net.bramp.ffmpeg.progress.Progress;
+import org.apache.commons.io.FileUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.util.DigestUtils;
+import top.panll.assist.dto.SignInfo;
 import top.panll.assist.dto.SpaceInfo;
 import top.panll.assist.utils.RedisUtil;
 import top.panll.assist.dto.MergeOrCutTaskInfo;
@@ -496,5 +498,60 @@ public class VideoFileService {
 //            }
 //        }
         return false;
+    }
+
+    public boolean collection(String app, String stream) {
+        File streamFile = new File(userSettings.getRecord() + File.separator + app + File.separator + stream);
+        boolean result = false;
+        if (streamFile.exists() && streamFile.isDirectory() && streamFile.canWrite()) {
+            File signFile = new File(streamFile.getAbsolutePath() + File.separator + "sign");
+            try {
+                result = signFile.createNewFile();
+            } catch (IOException e) {
+                logger.error("[收藏文件]失败，{}/{}", app, stream);
+            }
+        }
+        return result;
+    }
+
+    public boolean removeCollection(String app, String stream) {
+        File signFile = new File(userSettings.getRecord() + File.separator + app + File.separator + stream + File.separator + "sign");
+        boolean result = false;
+        if (signFile.exists() && signFile.isFile()) {
+            result = signFile.delete();
+        }
+        return result;
+    }
+
+    public List<SignInfo> getCollectionList(String app, String stream) {
+        List<File> appList = this.getAppList(true);
+        List<SignInfo> result = new ArrayList<>();
+        if (appList.size() > 0) {
+            for (File appFile : appList) {
+                if (app != null) {
+                    if (!app.equals(appFile.getName())) {
+                        continue;
+                    }
+                }
+                List<File> streamList = getStreamList(appFile, true);
+                if (streamList.size() > 0) {
+                    for (File streamFile : streamList) {
+                        if (stream != null) {
+                            if (!stream.equals(streamFile.getName())) {
+                                continue;
+                            }
+                        }
+                        File signFile = new File(streamFile.getAbsolutePath() + File.separator + "sign");
+                        if (signFile.exists()) {
+                            SignInfo signInfo = new SignInfo();
+                            signInfo.setApp(appFile.getName());
+                            signInfo.setStream(streamFile.getName());
+                            result.add(signInfo);
+                        }
+                    }
+                }
+            }
+        }
+        return result;
     }
 }

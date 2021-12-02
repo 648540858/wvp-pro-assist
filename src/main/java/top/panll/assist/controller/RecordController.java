@@ -14,6 +14,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import top.panll.assist.controller.bean.WVPResult;
 import top.panll.assist.dto.MergeOrCutTaskInfo;
+import top.panll.assist.dto.SignInfo;
 import top.panll.assist.dto.SpaceInfo;
 import top.panll.assist.service.VideoFileService;
 import top.panll.assist.utils.PageInfo;
@@ -286,6 +287,70 @@ public class RecordController {
         result.setCode(0);
         result.setMsg(taskList !=  null?"success":"error");
         result.setData(taskList);
+        return result;
+    }
+
+    /**
+     * 收藏录像（被收藏的录像不会被清理任务清理）
+     */
+    @ApiOperation("收藏录像（被收藏的录像不会被清理任务清理）")
+    @ApiImplicitParams({
+            @ApiImplicitParam(name="app", value = "应用名", required = true, dataTypeClass = String.class),
+            @ApiImplicitParam(name="stream", value = "流ID", required = true, dataTypeClass = String.class),
+    })
+    @GetMapping(value = "/file/collection/add")
+    @ResponseBody
+    public WVPResult<String> collection(
+            @RequestParam(required = true) String app,
+            @RequestParam(required = true) String stream){
+
+        boolean collectionResult = videoFileService.collection(app, stream);
+        WVPResult<String> result = new WVPResult<>();
+        result.setCode(0);
+        result.setMsg(collectionResult ?"success":"error");
+        return result;
+    }
+
+    /**
+     * 移除收藏录像
+     */
+    @ApiOperation("移除收藏录像")
+    @ApiImplicitParams({
+            @ApiImplicitParam(name="app", value = "应用名", required = true, dataTypeClass = String.class),
+            @ApiImplicitParam(name="stream", value = "流ID", required = true, dataTypeClass = String.class),
+    })
+    @GetMapping(value = "/file/collection/remove")
+    @ResponseBody
+    public WVPResult<String> removeCollection(
+            @RequestParam(required = true) String app,
+            @RequestParam(required = true) String stream){
+
+        boolean collectionResult = videoFileService.removeCollection(app, stream);
+        WVPResult<String> result = new WVPResult<>();
+        result.setCode(0);
+        result.setMsg(collectionResult ?"success":"error");
+        return result;
+    }
+
+    /**
+     * 收藏录像列表
+     */
+    @ApiOperation("收藏录像列表")
+    @ApiImplicitParams({
+            @ApiImplicitParam(name="app", value = "应用名", required = false, dataTypeClass = String.class),
+            @ApiImplicitParam(name="stream", value = "流ID", required = false, dataTypeClass = String.class),
+    })
+    @GetMapping(value = "/file/collection/list")
+    @ResponseBody
+    public WVPResult<List<SignInfo>> collectionList(
+            @RequestParam(required = false) String app,
+            @RequestParam(required = false) String stream){
+
+        List<SignInfo> signInfos = videoFileService.getCollectionList(app, stream);
+        WVPResult<List<SignInfo>> result = new WVPResult<>();
+        result.setCode(0);
+        result.setMsg(signInfos != null ?"success":"error");
+        result.setData(signInfos);
         return result;
     }
 

@@ -1,6 +1,5 @@
 package top.panll.assist.dto;
 
-import java.util.Date;
 
 public class MergeOrCutTaskInfo {
     private String id;
