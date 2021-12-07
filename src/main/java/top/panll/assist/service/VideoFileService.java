@@ -338,6 +338,7 @@ public class VideoFileService {
             return null;
         }
         String taskId = DigestUtils.md5DigestAsHex(String.valueOf(System.currentTimeMillis()).getBytes());
+        logger.info("[录像合并] 开始合并，APP:{}, STREAM: {}, 任务ID：{}", app, stream, taskId);
         String destDir = "recordTemp" + File.separator + taskId + File.separator + app;
         File recordFile = new File(new File(userSettings.getRecord()).getParentFile().getAbsolutePath()  + File.separator + destDir );
         if (!recordFile.exists()) recordFile.mkdirs();
@@ -374,6 +375,7 @@ public class VideoFileService {
                     mergeOrCutTaskInfo.setPlayFile(remoteHost + "/" + relativize);
                 }
                 redisUtil.convertAndSend("topic_mergeorcut_end", mergeOrCutTaskInfo);
+                logger.info("[录像合并] 合并完成，APP:{}, STREAM: {}, 任务ID：{}", app, stream, taskId);
             }else {
                 mergeOrCutTaskInfo.setPercentage(percentage + "");
                 redisUtil.convertAndSend("topic_mergeorcut_continue",  mergeOrCutTaskInfo);
