@@ -53,7 +53,7 @@ public class VideoFileService {
 
     public List<File> getAppList(Boolean sort) {
         File recordFile = new File(userSettings.getRecord());
-        if (recordFile != null && recordFile.isDirectory()) {
+        if (recordFile.isDirectory()) {
             File[] files = recordFile.listFiles((File dir, String name) -> {
                 File currentFile = new File(dir.getAbsolutePath() + File.separator + name);
                 return  currentFile.isDirectory();
@@ -247,6 +247,9 @@ public class VideoFileService {
             Date fileDate = null;
             Date startDate = null;
             Date endDate = null;
+            if (new File(dir + File.separator + name).isFile()) {
+                return false;
+            }
             if (startTime != null) {
                 startDate = new Date(startTime.getTime() - ((startTime.getTime() + 28800000) % (86400000)));
             }
@@ -277,7 +280,8 @@ public class VideoFileService {
                 // TODO 按时间获取文件
                 File[] files = dateFile.listFiles((File dir, String name) ->{
                     boolean filterResult = true;
-                    if (name.contains(":") && name.endsWith(".mp4") && !name.startsWith(".")){
+                    File currentFile = new File(dir + File.separator + name);
+                    if (currentFile.isFile()  && name.contains(":") && name.endsWith(".mp4") && !name.startsWith(".")){
                         String[] timeArray = name.split("-");
                         if (timeArray.length == 3){
                             String fileStartTimeStr = dateFile.getName() + " " + timeArray[0];
@@ -289,12 +293,13 @@ public class VideoFileService {
                                 if (endTime != null) {
                                     filterResult = filterResult &&  (formatter.parse(fileEndTimeStr).before(endTime) || (formatter.parse(fileEndTimeStr).after(endTime) && formatter.parse(fileStartTimeStr).before(endTime)));
                                 }
-
                             } catch (ParseException e) {
                                 logger.error("过滤视频文件时异常： {}-{}", name, e.getMessage());
                                 return false;
                             }
                         }
+                    }else {
+                        filterResult = false;
                     }
                     return filterResult;
                 });
@@ -399,7 +404,7 @@ public class VideoFileService {
         }
         File[] dateFiles = streamFile.listFiles((File dir, String name)->{
             File currentFile = new File(dir.getAbsolutePath() + File.separator + name);
-            if (currentFile.isDirectory()){
+            if (!currentFile.isDirectory()){
                 return false;
             }
             Date date = null;
@@ -411,7 +416,7 @@ public class VideoFileService {
             Calendar c = Calendar.getInstance();
             c.setTime(date);
             int y = c.get(Calendar.YEAR);
-            int m = c.get(Calendar.MONTH);
+            int m = c.get(Calendar.MONTH) + 1;
             if (year != null) {
                 if (month != null) {
                     return  y == year && m == month;

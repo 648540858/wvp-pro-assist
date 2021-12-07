@@ -24,6 +24,7 @@ public class PageInfo<T> {
     }
 
     public void startPage(int page, int count) {
+        if (count <= 0) count = 10;
         if (page <= 0) page = 1;
         this.pageNum = page;
         this.pageSize = count;

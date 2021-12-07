@@ -81,7 +81,7 @@ public class RecordController {
         WVPResult<PageInfo<String>> result = new WVPResult<>();
         List<String> resultData = new ArrayList<>();
         List<File> appList = videoFileService.getAppList(true);
-        if (appList != null) {
+        if (appList.size() > 0) {
             for (File file : appList) {
                 resultData.add(file.getName());
             }
@@ -253,7 +253,7 @@ public class RecordController {
                 startTimeDate = formatter.parse(startTime);
             }
             if (endTime != null ) {
-                    endTimeDate = formatter.parse(endTime);
+                endTimeDate = formatter.parse(endTime);
             }
         } catch (ParseException e) {
             e.printStackTrace();
