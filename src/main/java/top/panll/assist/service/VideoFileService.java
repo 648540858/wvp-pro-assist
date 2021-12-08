@@ -371,7 +371,7 @@ public class VideoFileService {
                 Path relativize = Paths.get(userSettings.getRecord()).getParent().relativize(Paths.get(result));
                 mergeOrCutTaskInfo.setRecordFile(relativize.toString());
                 if (remoteHost != null) {
-                    mergeOrCutTaskInfo.setDownloadFile(remoteHost + "/record/download.html?url=../" + relativize);
+                    mergeOrCutTaskInfo.setDownloadFile(remoteHost + "/download.html?url=" + relativize);
                     mergeOrCutTaskInfo.setPlayFile(remoteHost + "/" + relativize);
                 }
                 redisUtil.convertAndSend("topic_mergeorcut_end", mergeOrCutTaskInfo);

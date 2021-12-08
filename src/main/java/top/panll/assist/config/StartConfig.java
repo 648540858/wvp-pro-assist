@@ -93,7 +93,7 @@ public class StartConfig implements CommandLineRunner {
 
     private void writeAssistDownPage(File recordFile) {
         try {
-            File file = new File(recordFile.getAbsolutePath(), "download.html");
+            File file = new File(recordFile.getParentFile().getAbsolutePath(), "download.html");
             if (file.exists()) {
                 file.delete();
             }
