@@ -281,7 +281,7 @@ public class VideoFileService {
                 File[] files = dateFile.listFiles((File dir, String name) ->{
                     boolean filterResult = true;
                     File currentFile = new File(dir + File.separator + name);
-                    if (currentFile.isFile()  && name.contains(":") && name.endsWith(".mp4") && !name.startsWith(".")){
+                    if (currentFile.isFile()  && name.contains(":") && name.endsWith(".mp4") && !name.startsWith(".") && currentFile.length() > 0){
                         String[] timeArray = name.split("-");
                         if (timeArray.length == 3){
                             String fileStartTimeStr = dateFile.getName() + " " + timeArray[0];
@@ -361,28 +361,53 @@ public class VideoFileService {
                     + filesInTime.get(filesInTime.size()- 1).getName().split("-")[1];
             mergeOrCutTaskInfo.setEndTime(endTimeInFile);
         }
+        if (filesInTime.size() == 1) {
 
-        ffmpegExecUtils.mergeOrCutFile(filesInTime, recordFile, stream, (status, percentage, result)->{
-            // 发出redis通知
-            if (status.equals(Progress.Status.END.name())) {
-                mergeOrCutTaskInfo.setPercentage("1");
-
-                // 处理文件路径
-                Path relativize = Paths.get(userSettings.getRecord()).getParent().relativize(Paths.get(result));
-                mergeOrCutTaskInfo.setRecordFile(relativize.toString());
-                if (remoteHost != null) {
-                    mergeOrCutTaskInfo.setDownloadFile(remoteHost + "/download.html?url=" + relativize);
-                    mergeOrCutTaskInfo.setPlayFile(remoteHost + "/" + relativize);
-                }
-                redisUtil.convertAndSend("topic_mergeorcut_end", mergeOrCutTaskInfo);
-                logger.info("[录像合并] 合并完成，APP:{}, STREAM: {}, 任务ID：{}", app, stream, taskId);
-            }else {
-                mergeOrCutTaskInfo.setPercentage(percentage + "");
-                redisUtil.convertAndSend("topic_mergeorcut_continue",  mergeOrCutTaskInfo);
+            // 文件只有一个则不合并，直接复制过去
+            mergeOrCutTaskInfo.setPercentage("1");
+            // 处理文件路径
+            String recordFileResultPath = recordFile.getAbsolutePath() + File.separator + stream + ".mp4";
+            Path relativize = Paths.get(userSettings.getRecord()).getParent().relativize(Paths.get(recordFileResultPath));
+            try {
+                Files.copy(filesInTime.get(0).toPath(), Paths.get(recordFileResultPath));
+            } catch (IOException e) {
+                e.printStackTrace();
+                logger.info("[录像合并] 失败，APP:{}, STREAM: {}, 任务ID：{}", app, stream, taskId);
+                return taskId;
+            }
+            mergeOrCutTaskInfo.setRecordFile(relativize.toString());
+            if (remoteHost != null) {
+                mergeOrCutTaskInfo.setDownloadFile(remoteHost + "/download.html?url=" + relativize);
+                mergeOrCutTaskInfo.setPlayFile(remoteHost + "/" + relativize);
             }
             String key = String.format("%S_%S_%S_%S", keyStr, mergeOrCutTaskInfo.getApp(), mergeOrCutTaskInfo.getStream(), mergeOrCutTaskInfo.getId());
             redisUtil.set(key, mergeOrCutTaskInfo);
-        });
+            redisUtil.convertAndSend("topic_mergeorcut_end", mergeOrCutTaskInfo);
+            logger.info("[录像合并] 合并完成，APP:{}, STREAM: {}, 任务ID：{}", app, stream, taskId);
+        }else {
+            ffmpegExecUtils.mergeOrCutFile(filesInTime, recordFile, stream, (status, percentage, result)->{
+                // 发出redis通知
+                if (status.equals(Progress.Status.END.name())) {
+                    mergeOrCutTaskInfo.setPercentage("1");
+
+                    // 处理文件路径
+                    Path relativize = Paths.get(userSettings.getRecord()).getParent().relativize(Paths.get(result));
+                    mergeOrCutTaskInfo.setRecordFile(relativize.toString());
+                    if (remoteHost != null) {
+                        mergeOrCutTaskInfo.setDownloadFile(remoteHost + "/download.html?url=" + relativize);
+                        mergeOrCutTaskInfo.setPlayFile(remoteHost + "/" + relativize);
+                    }
+                    redisUtil.convertAndSend("topic_mergeorcut_end", mergeOrCutTaskInfo);
+                    logger.info("[录像合并] 合并完成，APP:{}, STREAM: {}, 任务ID：{}", app, stream, taskId);
+                }else {
+                    mergeOrCutTaskInfo.setPercentage(percentage + "");
+                    redisUtil.convertAndSend("topic_mergeorcut_continue",  mergeOrCutTaskInfo);
+                }
+                String key = String.format("%S_%S_%S_%S", keyStr, mergeOrCutTaskInfo.getApp(), mergeOrCutTaskInfo.getStream(), mergeOrCutTaskInfo.getId());
+                redisUtil.set(key, mergeOrCutTaskInfo);
+            });
+        }
+
         return taskId;
     }
 
