@@ -21,6 +21,9 @@ public class UserSettings {
     @Value("${userSettings.ffprobe}")
     private String ffprobe;
 
+    @Value("${userSettings.threads:2}")
+    private int threads;
+
     public String getRecord() {
         return record;
     }
@@ -63,5 +66,13 @@ public class UserSettings {
 
     public void setRecordTempDay(int recordTempDay) {
         this.recordTempDay = recordTempDay;
+    }
+
+    public int getThreads() {
+        return threads;
+    }
+
+    public void setThreads(int threads) {
+        this.threads = threads;
     }
 }

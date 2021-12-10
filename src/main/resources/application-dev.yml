@@ -38,6 +38,8 @@ userSettings:
     ffmpeg: /usr/bin/ffmpeg
     # [必选 ] ffprobe路径， 一般安装ffmpeg就会自带， 一般跟ffmpeg在同一目录,用于查询文件的信息
     ffprobe: /usr/bin/ffprobe
+    # [可选 ] 限制 ffmpeg 合并文件使用的线程数，间接限制cpu使用率， 默认2 限制到50%
+    threads: 2
 
 swagger-ui:
     enabled: true

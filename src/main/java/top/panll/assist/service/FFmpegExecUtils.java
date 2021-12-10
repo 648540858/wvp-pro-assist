@@ -116,6 +116,7 @@ public class FFmpegExecUtils implements InitializingBean{
                 .overrideOutputFiles(true)
                 .setInput(fileListName) // Or filename
                 .addExtraArgs("-safe", "0")
+                .addExtraArgs("-threads", userSettings.getThreads() + "")
                 .addOutput(recordFileResultPath)
                 .setVideoCodec("copy")
                 .setAudioCodec("copy")
