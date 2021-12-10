@@ -6,7 +6,10 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
+import org.springframework.util.StringUtils;
+import top.panll.assist.dto.MergeOrCutTaskInfo;
 import top.panll.assist.dto.UserSettings;
+import top.panll.assist.utils.RedisUtil;
 
 import java.io.File;
 import java.text.ParseException;
@@ -19,6 +22,7 @@ import java.util.List;
 public class FileManagerTimer {
 
     private SimpleDateFormat formatter = new SimpleDateFormat("yyyy-MM-dd");
+    private final SimpleDateFormat simpleDateFormatForTime = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
 
     private final static Logger logger = LoggerFactory.getLogger(FileManagerTimer.class);
 
@@ -28,8 +32,13 @@ public class FileManagerTimer {
     @Autowired
     private VideoFileService videoFileService;
 
-//    @Scheduled(fixedDelay = 2000)   //测试 20秒执行一次
-    @Scheduled(cron = "0 0 0 * * ?")   //每天的0点执行
+    @Autowired
+    private RedisUtil redisUtil;
+
+    private final String keyStr = "MERGEORCUT";
+
+    @Scheduled(fixedDelay = 2000)   //测试 20秒执行一次
+//    @Scheduled(cron = "0 0 0 * * ?")   //每天的0点执行
     public void execute(){
         int recordDay = userSettings.getRecordDay();
         Date lastDate=new Date();
@@ -113,6 +122,21 @@ public class FileManagerTimer {
                         logger.info("[录像巡查]合并任务临时文件移除失败 {} ", tempFile.getAbsolutePath());
                     }
                 }
+            }
+        }
+        // 清理redis记录
+        String key = String.format("%S_*_*_*", keyStr);
+        List<Object> taskKeys = redisUtil.scan(key);
+        for (Object taskKeyObj : taskKeys) {
+            String taskKey = (String) taskKeyObj;
+            MergeOrCutTaskInfo mergeOrCutTaskInfo = (MergeOrCutTaskInfo)redisUtil.get(taskKey);
+            try {
+                if (StringUtils.isEmpty(mergeOrCutTaskInfo.getCreateTime())
+                        || simpleDateFormatForTime.parse(mergeOrCutTaskInfo.getCreateTime()).before(lastTempDate)) {
+                    redisUtil.del(taskKey);
+                }
+            } catch (ParseException e) {
+                e.printStackTrace();
             }
         }
     }
