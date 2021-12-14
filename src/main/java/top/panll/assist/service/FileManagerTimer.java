@@ -37,8 +37,8 @@ public class FileManagerTimer {
 
     private final String keyStr = "MERGEORCUT";
 
-    @Scheduled(fixedDelay = 2000)   //测试 20秒执行一次
-//    @Scheduled(cron = "0 0 0 * * ?")   //每天的0点执行
+//    @Scheduled(fixedDelay = 2000)   //测试 20秒执行一次
+    @Scheduled(cron = "0 0 0 * * ?")   //每天的0点执行
     public void execute(){
         int recordDay = userSettings.getRecordDay();
         Date lastDate=new Date();
