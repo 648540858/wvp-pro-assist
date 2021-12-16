@@ -47,7 +47,7 @@ public class VideoFileService {
 
 
     private final SimpleDateFormat simpleDateFormat = new SimpleDateFormat("yyyy-MM-dd");
-    private final SimpleDateFormat simpleDateFormatForTime = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
+    private final SimpleDateFormat simpleDateFormatForTime = new SimpleDateFormat("yyyy-MM-dd HH-mm-ss");
 
     private final String keyStr = "MERGEORCUT";
 
@@ -133,15 +133,14 @@ public class VideoFileService {
      */
     public void handFile(File file) {
         FFprobe ffprobe = ffmpegExecUtils.getFfprobe();
-        if(file.exists() && file.isFile() && !file.getName().startsWith(".")&& file.getName().endsWith(".mp4") && file.getName().indexOf(":") < 0) {
+        if(file.exists() && file.isFile() && !file.getName().startsWith(".")&& file.getName().endsWith(".mp4") && !file.getName().contains("~")) {
             try {
                 FFmpegProbeResult in = null;
                 in = ffprobe.probe(file.getAbsolutePath());
                 double duration = in.getFormat().duration * 1000;
                 String endTimeStr = file.getName().replace(".mp4", "");
-
                 SimpleDateFormat formatter = new SimpleDateFormat("yyyy-MM-dd HH-mm-ss");
-                SimpleDateFormat simpleDateFormat = new SimpleDateFormat("HH:mm:ss");
+                SimpleDateFormat simpleDateFormat = new SimpleDateFormat("HH-mm-ss");
 
                 File dateFile = new File(file.getParent());
 
@@ -151,11 +150,11 @@ public class VideoFileService {
                 endTime = endTime - endTime%1000;
 
                 String newName = file.getAbsolutePath().replace(file.getName(),
-                        simpleDateFormat.format(startTime) + "-" + simpleDateFormat.format(endTime) + "-" + durationLong + ".mp4");
+                        simpleDateFormat.format(startTime) + "~" + simpleDateFormat.format(endTime) + "~" + durationLong + ".mp4");
                 file.renameTo(new File(newName));
                 logger.debug("[处理文件] {}", file.getName());
             } catch (IOException e) {
-                logger.warn("文件可能以损坏[{}]", file.getAbsolutePath());
+                logger.warn("文件可能已损坏[{}]", file.getAbsolutePath());
 //                e.printStackTrace();
             } catch (ParseException e) {
                 logger.error("时间格式化失败", e.getMessage());
@@ -221,7 +220,7 @@ public class VideoFileService {
             return result;
         }
 
-        SimpleDateFormat formatter = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
+        SimpleDateFormat formatter = new SimpleDateFormat("yyyy-MM-dd HH-mm-ss");
         SimpleDateFormat formatterForDate = new SimpleDateFormat("yyyy-MM-dd");
         String startTimeStr = null;
         String endTimeStr = null;
@@ -281,8 +280,8 @@ public class VideoFileService {
                 File[] files = dateFile.listFiles((File dir, String name) ->{
                     boolean filterResult = true;
                     File currentFile = new File(dir + File.separator + name);
-                    if (currentFile.isFile()  && name.contains(":") && name.endsWith(".mp4") && !name.startsWith(".") && currentFile.length() > 0){
-                        String[] timeArray = name.split("-");
+                    if (currentFile.isFile()  && name.contains("~") && name.endsWith(".mp4") && !name.startsWith(".") && currentFile.length() > 0){
+                        String[] timeArray = name.split("~");
                         if (timeArray.length == 3){
                             String fileStartTimeStr = dateFile.getName() + " " + timeArray[0];
                             String fileEndTimeStr = dateFile.getName() + " " + timeArray[1];
@@ -311,8 +310,8 @@ public class VideoFileService {
         if (result.size() > 0) {
             result.sort((File f1, File f2) -> {
                 int sortResult = 0;
-                String[] timeArray1 = f1.getName().split("-");
-                String[] timeArray2 = f2.getName().split("-");
+                String[] timeArray1 = f1.getName().split("~");
+                String[] timeArray2 = f2.getName().split("~");
                 if (timeArray1.length == 3 && timeArray2.length == 3){
                     File dateFile1 = f1.getParentFile();
                     File dateFile2 = f2.getParentFile();
@@ -351,14 +350,14 @@ public class VideoFileService {
             mergeOrCutTaskInfo.setStartTime(simpleDateFormatForTime.format(startTime));
         }else {
             String startTimeInFile = filesInTime.get(0).getParentFile().getName() + " "
-                    + filesInTime.get(0).getName().split("-")[0];
+                    + filesInTime.get(0).getName().split("~")[0];
             mergeOrCutTaskInfo.setStartTime(startTimeInFile);
         }
         if(endTime != null) {
             mergeOrCutTaskInfo.setEndTime(simpleDateFormatForTime.format(endTime));
         }else {
             String endTimeInFile = filesInTime.get(filesInTime.size()- 1).getParentFile().getName() + " "
-                    + filesInTime.get(filesInTime.size()- 1).getName().split("-")[1];
+                    + filesInTime.get(filesInTime.size()- 1).getName().split("~")[1];
             mergeOrCutTaskInfo.setEndTime(endTimeInFile);
         }
         if (filesInTime.size() == 1) {
