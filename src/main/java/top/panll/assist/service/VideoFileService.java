@@ -439,6 +439,7 @@ public class VideoFileService {
                 date = simpleDateFormat.parse(name);
             } catch (ParseException e) {
                 logger.error("格式化时间{}错误", name);
+                return false;
             }
             Calendar c = Calendar.getInstance();
             c.setTime(date);

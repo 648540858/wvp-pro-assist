@@ -81,7 +81,7 @@ public class FileManagerTimer {
                                     }
                                 }
                             }
-                            if (streamFile.listFiles() == null &&  streamFile.listFiles().length == 0) {
+                            if (streamFile.listFiles() == null || streamFile.listFiles().length == 0) {
                                 boolean result = FileUtils.deleteQuietly(streamFile);
                                 if (result) {
                                     logger.info("[录像巡查]成功移除 {} ", streamFile.getAbsolutePath());
