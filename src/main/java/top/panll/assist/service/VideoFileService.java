@@ -533,11 +533,11 @@ public class VideoFileService {
         return false;
     }
 
-    public boolean collection(String app, String stream) {
+    public boolean collection(String app, String stream, String type) {
         File streamFile = new File(userSettings.getRecord() + File.separator + app + File.separator + stream);
         boolean result = false;
         if (streamFile.exists() && streamFile.isDirectory() && streamFile.canWrite()) {
-            File signFile = new File(streamFile.getAbsolutePath() + File.separator + "sign");
+            File signFile = new File(streamFile.getAbsolutePath() + File.separator + type + ".sign");
             try {
                 result = signFile.createNewFile();
             } catch (IOException e) {
@@ -547,8 +547,8 @@ public class VideoFileService {
         return result;
     }
 
-    public boolean removeCollection(String app, String stream) {
-        File signFile = new File(userSettings.getRecord() + File.separator + app + File.separator + stream + File.separator + "sign");
+    public boolean removeCollection(String app, String stream, String type) {
+        File signFile = new File(userSettings.getRecord() + File.separator + app + File.separator + stream + File.separator + type + ".sign");
         boolean result = false;
         if (signFile.exists() && signFile.isFile()) {
             result = signFile.delete();
@@ -556,7 +556,7 @@ public class VideoFileService {
         return result;
     }
 
-    public List<SignInfo> getCollectionList(String app, String stream) {
+    public List<SignInfo> getCollectionList(String app, String stream, String type) {
         List<File> appList = this.getAppList(true);
         List<SignInfo> result = new ArrayList<>();
         if (appList.size() > 0) {
@@ -574,7 +574,7 @@ public class VideoFileService {
                                 continue;
                             }
                         }
-                        File signFile = new File(streamFile.getAbsolutePath() + File.separator + "sign");
+                        File signFile = new File(streamFile.getAbsolutePath() + File.separator + type + ".sign");
                         if (signFile.exists()) {
                             SignInfo signInfo = new SignInfo();
                             signInfo.setApp(appFile.getName());

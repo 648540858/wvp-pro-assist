@@ -295,16 +295,18 @@ public class RecordController {
      */
     @ApiOperation("收藏录像（被收藏的录像不会被清理任务清理）")
     @ApiImplicitParams({
+            @ApiImplicitParam(name="type", value = "类型", required = true, dataTypeClass = String.class),
             @ApiImplicitParam(name="app", value = "应用名", required = true, dataTypeClass = String.class),
             @ApiImplicitParam(name="stream", value = "流ID", required = true, dataTypeClass = String.class),
     })
     @GetMapping(value = "/file/collection/add")
     @ResponseBody
     public WVPResult<String> collection(
+            @RequestParam(required = true) String type,
             @RequestParam(required = true) String app,
             @RequestParam(required = true) String stream){
 
-        boolean collectionResult = videoFileService.collection(app, stream);
+        boolean collectionResult = videoFileService.collection(app, stream, type);
         WVPResult<String> result = new WVPResult<>();
         result.setCode(0);
         result.setMsg(collectionResult ?"success":"error");
@@ -316,16 +318,18 @@ public class RecordController {
      */
     @ApiOperation("移除收藏录像")
     @ApiImplicitParams({
+            @ApiImplicitParam(name="type", value = "类型", required = true, dataTypeClass = String.class),
             @ApiImplicitParam(name="app", value = "应用名", required = true, dataTypeClass = String.class),
             @ApiImplicitParam(name="stream", value = "流ID", required = true, dataTypeClass = String.class),
     })
     @GetMapping(value = "/file/collection/remove")
     @ResponseBody
     public WVPResult<String> removeCollection(
+            @RequestParam(required = true) String type,
             @RequestParam(required = true) String app,
             @RequestParam(required = true) String stream){
 
-        boolean collectionResult = videoFileService.removeCollection(app, stream);
+        boolean collectionResult = videoFileService.removeCollection(app, stream, type);
         WVPResult<String> result = new WVPResult<>();
         result.setCode(0);
         result.setMsg(collectionResult ?"success":"error");
@@ -337,16 +341,18 @@ public class RecordController {
      */
     @ApiOperation("收藏录像列表")
     @ApiImplicitParams({
+            @ApiImplicitParam(name="type", value = "类型", required = true, dataTypeClass = String.class),
             @ApiImplicitParam(name="app", value = "应用名", required = false, dataTypeClass = String.class),
             @ApiImplicitParam(name="stream", value = "流ID", required = false, dataTypeClass = String.class),
     })
     @GetMapping(value = "/file/collection/list")
     @ResponseBody
     public WVPResult<List<SignInfo>> collectionList(
+            @RequestParam(required = false) String type,
             @RequestParam(required = false) String app,
             @RequestParam(required = false) String stream){
 
-        List<SignInfo> signInfos = videoFileService.getCollectionList(app, stream);
+        List<SignInfo> signInfos = videoFileService.getCollectionList(app, stream, type);
         WVPResult<List<SignInfo>> result = new WVPResult<>();
         result.setCode(0);
         result.setMsg(signInfos != null ?"success":"error");

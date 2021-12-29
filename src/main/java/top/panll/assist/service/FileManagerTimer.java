@@ -59,8 +59,11 @@ public class FileManagerTimer {
                     if (streamList != null && streamList.size() > 0) {
                         for (File streamFile : streamList) {
                             // 带有sig标记文件的为收藏文件，不被自动清理任务移除
-                            File signFile = new File(streamFile.getAbsolutePath() + File.separator + "sign");
-                            if (signFile.exists()) {
+                            File[] signFiles = streamFile.listFiles((File dir, String name) -> {
+                                File currentFile = new File(dir.getAbsolutePath() + File.separator + name);
+                                return currentFile.isFile() && name.endsWith(".sign");
+                            });
+                            if (signFiles != null && signFiles.length > 0) {
                                 continue;
                             }
                             List<File> dateList = videoFileService.getDateList(streamFile, null, null, false);
