@@ -574,12 +574,29 @@ public class VideoFileService {
                                 continue;
                             }
                         }
-                        File signFile = new File(streamFile.getAbsolutePath() + File.separator + type + ".sign");
-                        if (signFile.exists()) {
-                            SignInfo signInfo = new SignInfo();
-                            signInfo.setApp(appFile.getName());
-                            signInfo.setStream(streamFile.getName());
-                            result.add(signInfo);
+
+                        if (type != null) {
+                            File signFile = new File(streamFile.getAbsolutePath() + File.separator + type + ".sign");
+                            if (signFile.exists()) {
+                                SignInfo signInfo = new SignInfo();
+                                signInfo.setApp(appFile.getName());
+                                signInfo.setStream(streamFile.getName());
+                                signInfo.setType(type);
+                                result.add(signInfo);
+                            }
+                        }else {
+                            streamFile.listFiles((File dir, String name) -> {
+                                File currentFile = new File(dir.getAbsolutePath() + File.separator + name);
+                                if (currentFile.isFile() && name.endsWith(".sign")){
+                                    String currentType = name.substring(0, name.length() - ".sign".length());
+                                    SignInfo signInfo = new SignInfo();
+                                    signInfo.setApp(appFile.getName());
+                                    signInfo.setStream(streamFile.getName());
+                                    signInfo.setType(currentType);
+                                    result.add(signInfo);
+                                }
+                                return false;
+                            });
                         }
                     }
                 }
