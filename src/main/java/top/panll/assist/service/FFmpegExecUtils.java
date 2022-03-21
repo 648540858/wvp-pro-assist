@@ -72,6 +72,8 @@ public class FFmpegExecUtils implements InitializingBean{
         logger.info("wvp-pro辅助程序启动成功。 \n{}\n{} ", this.ffmpeg.version(), this.ffprobe.version());
     }
 
+
+
     public interface VideoHandEndCallBack {
         void run(String status, double percentage, String result);
     }
@@ -147,6 +149,11 @@ public class FFmpegExecUtils implements InitializingBean{
 
         });
         job.run();
+    }
+
+    public double duration(File file) throws IOException {
+        FFmpegProbeResult in = ffprobe.probe(file.getAbsolutePath());
+        return in.getFormat().duration * 1000;
     }
 
 }

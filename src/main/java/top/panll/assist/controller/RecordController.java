@@ -411,4 +411,25 @@ public class RecordController {
         ret.put("data", JSON.toJSON(spaceInfo));
         return new ResponseEntity<>(ret.toString(), HttpStatus.OK);
     }
+
+    /**
+     * 录像文件的时长
+     */
+    @ApiOperation("录像文件的时长")
+    @ApiImplicitParams({
+            @ApiImplicitParam(name="app", value = "应用名", required = true, dataTypeClass = String.class),
+            @ApiImplicitParam(name="stream", value = "流ID", required = true, dataTypeClass = String.class),
+            @ApiImplicitParam(name="recordIng", value = "是否录制中", required = false, dataTypeClass = String.class),
+    })
+    @ResponseBody
+    @GetMapping(value = "/file/duration", produces = "application/json;charset=UTF-8")
+    public ResponseEntity<String> fileDuration( @RequestParam String app, @RequestParam String stream, Boolean recordIng) {
+        if (recordIng == null) recordIng = true;
+        JSONObject ret = new JSONObject();
+        ret.put("code", 0);
+        ret.put("msg", "success");
+        Double duration = videoFileService.fileDuration(app, stream, recordIng);
+        ret.put("data", duration);
+        return new ResponseEntity<>(ret.toString(), HttpStatus.OK);
+    }
 }
