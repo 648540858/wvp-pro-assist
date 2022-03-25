@@ -423,12 +423,12 @@ public class RecordController {
     })
     @ResponseBody
     @GetMapping(value = "/file/duration", produces = "application/json;charset=UTF-8")
-    public ResponseEntity<String> fileDuration( @RequestParam String app, @RequestParam String stream, Boolean recordIng) {
-        if (recordIng == null) recordIng = true;
+    @PostMapping(value = "/file/duration", produces = "application/json;charset=UTF-8")
+    public ResponseEntity<String> fileDuration( @RequestParam String app, @RequestParam String stream) {
         JSONObject ret = new JSONObject();
         ret.put("code", 0);
         ret.put("msg", "success");
-        Double duration = videoFileService.fileDuration(app, stream, recordIng);
+        long duration = videoFileService.fileDuration(app, stream);
         ret.put("data", duration);
         return new ResponseEntity<>(ret.toString(), HttpStatus.OK);
     }

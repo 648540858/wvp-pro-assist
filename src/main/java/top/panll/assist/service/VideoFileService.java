@@ -205,55 +205,6 @@ public class VideoFileService {
         return result;
     }
 
-    public List<File> getAllFiles(String app, String stream, Boolean recording){
-
-        List<File> result = new ArrayList<>();
-        if (app == null || stream == null) {
-            return result;
-        }
-
-        SimpleDateFormat formatter = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
-        SimpleDateFormat formatterForDate = new SimpleDateFormat("yyyy-MM-dd");
-
-        File recordFile = new File(userSettings.getRecord());
-        File streamFile = new File(recordFile.getAbsolutePath() + File.separator + app + File.separator + stream + File.separator);
-        if (!streamFile.exists()) {
-            logger.warn("获取[app: {}, stream: {}]的视频时未找到目录： {}", app, stream, stream);
-            return null;
-        }
-
-        File[] dateFiles = streamFile.listFiles((File dir, String name) -> {
-            if (new File(dir + File.separator + name).isFile()) {
-                return false;
-            }
-            try {
-                formatterForDate.parse(name);
-            } catch (ParseException e) {
-                logger.error("过滤日期文件时异常： {}-{}", name, e.getMessage());
-                return false;
-            }
-
-            return true ;
-        });
-
-        if (dateFiles != null && dateFiles.length > 0) {
-            for (File dateFile : dateFiles) {
-                File[] files = dateFile.listFiles((File dir, String name) ->{
-                    File currentFile = new File(dir + File.separator + name);
-                    if (recording) {
-                        return currentFile.isFile()  && name.contains(":") && name.endsWith(".mp4") && currentFile.length() > 0;
-                    }else {
-                        return currentFile.isFile()  && name.contains(":") && name.endsWith(".mp4") && currentFile.length() > 0 && !name.startsWith(".");
-                    }
-                });
-                List<File> fileList = Arrays.asList(files);
-                result.addAll(fileList);
-            }
-        }
-        return result;
-    }
-
-
     /**
      * 获取制定推流的指定时间段内的推流
      * @param app
@@ -653,10 +604,10 @@ public class VideoFileService {
         return result;
     }
 
-    public Double fileDuration(String app, String stream, Boolean recordIng) {
-        List<File> allFiles = getAllFiles(app, stream, recordIng);
-        Double durationResult = 0.0;
-        if (allFiles.size() > 0) {
+    public long fileDuration(String app, String stream) {
+        List<File> allFiles = getFilesInTime(app, stream, null, null);
+        long durationResult = 0;
+        if (allFiles != null && allFiles.size() > 0) {
             for (File file : allFiles) {
                 try {
                     durationResult += ffmpegExecUtils.duration(file);

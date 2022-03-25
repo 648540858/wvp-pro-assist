@@ -151,9 +151,11 @@ public class FFmpegExecUtils implements InitializingBean{
         job.run();
     }
 
-    public double duration(File file) throws IOException {
+    public long duration(File file) throws IOException {
         FFmpegProbeResult in = ffprobe.probe(file.getAbsolutePath());
-        return in.getFormat().duration * 1000;
+        double duration = in.getFormat().duration * 1000;
+        long durationLong = new Double(duration).longValue();
+        return durationLong;
     }
 
 }
