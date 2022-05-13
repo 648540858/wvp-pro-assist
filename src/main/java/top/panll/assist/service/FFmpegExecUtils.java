@@ -121,7 +121,7 @@ public class FFmpegExecUtils implements InitializingBean{
                 .addExtraArgs("-threads", userSettings.getThreads() + "")
                 .addOutput(recordFileResultPath)
                 .setVideoCodec("copy")
-                .setAudioCodec("copy")
+                .setAudioCodec("aac")
                 .setFormat("mp4")
                 .done();
 
