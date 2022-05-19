@@ -100,7 +100,11 @@ public class FFmpegExecUtils implements InitializingBean{
                 if (split.length != 3) continue;
                 String durationStr = split[2].replace(".mp4", "");
                 Double duration = Double.parseDouble(durationStr)/1000;
-                bw.write("file " + file.getAbsolutePath());
+                if(userSettings.isWindows()){
+                    bw.write("file " + file.getAbsolutePath().replaceAll("\\\\","/"));
+                }else{
+                    bw.write("file " + file.getAbsolutePath());
+                }
                 bw.newLine();
                 durationAll += duration;
             }
