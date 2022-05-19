@@ -24,6 +24,16 @@ public class UserSettings {
     @Value("${userSettings.threads:2}")
     private int threads;
 
+    private boolean isWindows;
+
+    public boolean isWindows() {
+        return isWindows;
+    }
+
+    public void setWindows(boolean windows) {
+        isWindows = windows;
+    }
+
     public String getRecord() {
         return record;
     }

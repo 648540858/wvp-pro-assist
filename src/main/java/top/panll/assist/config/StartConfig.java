@@ -2,6 +2,7 @@ package top.panll.assist.config;
 
 import net.bramp.ffmpeg.FFmpeg;
 import net.bramp.ffmpeg.FFprobe;
+import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -9,6 +10,8 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.core.annotation.Order;
 import org.springframework.stereotype.Component;
+import oshi.SystemInfo;
+import oshi.software.os.OperatingSystem;
 import top.panll.assist.dto.UserSettings;
 import top.panll.assist.service.FFmpegExecUtils;
 import top.panll.assist.service.VideoFileService;
@@ -54,6 +57,11 @@ public class StartConfig implements CommandLineRunner {
             logger.error("[userSettings.record]路径无法写入");
             System.exit(1);
         }
+
+        //获取操作系统类型
+        SystemInfo si = new SystemInfo();
+        OperatingSystem os = si.getOperatingSystem();
+        userSettings.setWindows(StringUtils.equals("Windows",os.getFamily()));
         // 在zlm目录写入assist下载页面
         writeAssistDownPage(recordFile);
         try {

@@ -133,7 +133,13 @@ public class VideoFileService {
      */
     public void handFile(File file) {
         FFprobe ffprobe = ffmpegExecUtils.getFfprobe();
-        if(file.exists() && file.isFile() && !file.getName().startsWith(".")&& file.getName().endsWith(".mp4") && file.getName().indexOf(":") < 0) {
+        boolean status;
+        if(userSettings.isWindows()){
+            status = !file.getName().contains("_");
+        }else{
+            status = !file.getName().contains(":");
+        }
+        if(file.exists() && file.isFile() && !file.getName().startsWith(".")&& file.getName().endsWith(".mp4") && status) {
             try {
                 FFmpegProbeResult in = ffprobe.probe(file.getAbsolutePath());
                 double duration = in.getFormat().duration * 1000;
@@ -141,6 +147,7 @@ public class VideoFileService {
 
                 SimpleDateFormat formatter = new SimpleDateFormat("yyyy-MM-dd HH-mm-ss");
                 SimpleDateFormat simpleDateFormat = new SimpleDateFormat("HH:mm:ss");
+                SimpleDateFormat simpleDateFormat1 = new SimpleDateFormat("HH_mm_ss");
 
                 File dateFile = new File(file.getParent());
 
@@ -148,9 +155,14 @@ public class VideoFileService {
                 long durationLong = new Double(duration).longValue();
                 long endTime = startTime + durationLong;
                 endTime = endTime - endTime%1000;
-
-                String newName = file.getAbsolutePath().replace(file.getName(),
-                        simpleDateFormat.format(startTime) + "-" + simpleDateFormat.format(endTime) + "-" + durationLong + ".mp4");
+                String newName = "";
+                if(userSettings.isWindows()){
+                    newName = file.getAbsolutePath().replace(file.getName(),
+                            simpleDateFormat1.format(startTime) + "-" + simpleDateFormat1.format(endTime) + "-" + durationLong + ".mp4");
+                }else{
+                    newName = file.getAbsolutePath().replace(file.getName(),
+                            simpleDateFormat.format(startTime) + "-" + simpleDateFormat.format(endTime) + "-" + durationLong + ".mp4");
+                }
                 file.renameTo(new File(newName));
                 logger.debug("[处理文件] {}", file.getName());
             } catch (IOException e) {
@@ -280,11 +292,25 @@ public class VideoFileService {
                 File[] files = dateFile.listFiles((File dir, String name) ->{
                     boolean filterResult = true;
                     File currentFile = new File(dir + File.separator + name);
-                    if (currentFile.isFile()  && name.contains(":") && name.endsWith(".mp4") && !name.startsWith(".") && currentFile.length() > 0){
+
+                    boolean status;
+                    if(userSettings.isWindows()){
+                        status = name.contains("_");
+                    }else{
+                        status = name.contains(":");
+                    }
+                    if (currentFile.isFile()  && status && name.endsWith(".mp4") && !name.startsWith(".") && currentFile.length() > 0){
                         String[] timeArray = name.split("-");
                         if (timeArray.length == 3){
-                            String fileStartTimeStr = dateFile.getName() + " " + timeArray[0];
-                            String fileEndTimeStr = dateFile.getName() + " " + timeArray[1];
+                            String fileStartTimeStr = "";
+                            String fileEndTimeStr= "";
+                            if(userSettings.isWindows()){
+                                fileStartTimeStr = dateFile.getName() + " " + timeArray[0].replaceAll("_",":");
+                                fileEndTimeStr = dateFile.getName() + " " + timeArray[1].replaceAll("_",":");
+                            }else{
+                                fileStartTimeStr = dateFile.getName() + " " + timeArray[0];
+                                fileEndTimeStr = dateFile.getName() + " " + timeArray[1];
+                            }
                             try {
                                 if (startTime != null) {
                                     filterResult = filterResult &&  (formatter.parse(fileStartTimeStr).after(startTime) || (formatter.parse(fileStartTimeStr).before(startTime) && formatter.parse(fileEndTimeStr).after(startTime)));
@@ -315,8 +341,15 @@ public class VideoFileService {
                 if (timeArray1.length == 3 && timeArray2.length == 3){
                     File dateFile1 = f1.getParentFile();
                     File dateFile2 = f2.getParentFile();
-                    String fileStartTimeStr1 = dateFile1.getName() + " " + timeArray1[0];
-                    String fileStartTimeStr2 = dateFile2.getName() + " " + timeArray2[0];
+                    String fileStartTimeStr1 = "";
+                    String fileStartTimeStr2= "";
+                    if(userSettings.isWindows()){
+                        fileStartTimeStr1 = dateFile1.getName() + " " + timeArray1[0].replaceAll("_",":");
+                        fileStartTimeStr2 = dateFile2.getName() + " " + timeArray2[0].replaceAll("_",":");
+                    }else{
+                        fileStartTimeStr1 = dateFile1.getName() + " " + timeArray1[0];
+                        fileStartTimeStr2 = dateFile2.getName() + " " + timeArray2[0];
+                    }
                     try {
                         sortResult = formatter.parse(fileStartTimeStr1).compareTo(formatter.parse(fileStartTimeStr2));
                     } catch (ParseException e) {
@@ -349,15 +382,27 @@ public class VideoFileService {
         if(startTime != null) {
             mergeOrCutTaskInfo.setStartTime(simpleDateFormatForTime.format(startTime));
         }else {
-            String startTimeInFile = filesInTime.get(0).getParentFile().getName() + " "
-                    + filesInTime.get(0).getName().split("-")[0];
+            String startTimeInFile ;
+            if(userSettings.isWindows()){
+                startTimeInFile = filesInTime.get(0).getParentFile().getName() + " "
+                        + filesInTime.get(0).getName().split("-")[0].replaceAll("_",":");
+            }else {
+                startTimeInFile = filesInTime.get(0).getParentFile().getName() + " "
+                        + filesInTime.get(0).getName().split("-")[0];
+            }
             mergeOrCutTaskInfo.setStartTime(startTimeInFile);
         }
         if(endTime != null) {
             mergeOrCutTaskInfo.setEndTime(simpleDateFormatForTime.format(endTime));
         }else {
-            String endTimeInFile = filesInTime.get(filesInTime.size()- 1).getParentFile().getName() + " "
-                    + filesInTime.get(filesInTime.size()- 1).getName().split("-")[1];
+            String endTimeInFile ;
+            if(userSettings.isWindows()){
+                endTimeInFile = filesInTime.get(filesInTime.size()- 1).getParentFile().getName() + " "
+                        + filesInTime.get(filesInTime.size()- 1).getName().split("-")[1].replaceAll("_",":");
+            }else {
+                endTimeInFile = filesInTime.get(filesInTime.size()- 1).getParentFile().getName() + " "
+                        + filesInTime.get(filesInTime.size()- 1).getName().split("-")[1];
+            }
             mergeOrCutTaskInfo.setEndTime(endTimeInFile);
         }
         if (filesInTime.size() == 1) {
