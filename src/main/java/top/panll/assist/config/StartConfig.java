@@ -73,7 +73,7 @@ public class StartConfig implements CommandLineRunner {
                                     File[] files = dateFile.listFiles();
                                     if (files != null && files.length > 0) {
                                         for (File file : files) {
-                                            videoFileService.handFile(file);
+                                            videoFileService.handFile(file, appFile.getName(), streamFile.getName());
                                         }
                                     }
                                 }

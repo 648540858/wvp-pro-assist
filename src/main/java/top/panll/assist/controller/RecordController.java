@@ -18,6 +18,7 @@ import top.panll.assist.dto.SignInfo;
 import top.panll.assist.dto.SpaceInfo;
 import top.panll.assist.service.VideoFileService;
 import top.panll.assist.utils.PageInfo;
+import top.panll.assist.utils.RedisUtil;
 
 import javax.servlet.http.HttpServletRequest;
 import java.io.File;
@@ -37,6 +38,9 @@ public class RecordController {
 
     @Autowired
     private VideoFileService videoFileService;
+
+    @Autowired
+    private RedisUtil redisUtil;
 
     private SimpleDateFormat formatter = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
 
@@ -390,9 +394,11 @@ public class RecordController {
         ret.put("code", 0);
         ret.put("msg", "success");
         String file_path = json.getString("file_path");
+        String app = json.getString("app");
+        String stream = json.getString("stream");
         logger.debug("ZLM 录制完成，参数：" + file_path);
         if (file_path == null) return new ResponseEntity<String>(ret.toString(), HttpStatus.OK);
-        videoFileService.handFile(new File(file_path));
+        videoFileService.handFile(new File(file_path), app, stream);
 
         return new ResponseEntity<String>(ret.toString(), HttpStatus.OK);
     }
@@ -431,5 +437,23 @@ public class RecordController {
         long duration = videoFileService.fileDuration(app, stream);
         ret.put("data", duration);
         return new ResponseEntity<>(ret.toString(), HttpStatus.OK);
+    }
+
+    /**
+     * 增加推流的鉴权信息，用于录像存储使用
+     */
+    @ApiOperation("增加推流的鉴权信息")
+    @ApiImplicitParams({
+            @ApiImplicitParam(name="app", value = "应用名", required = true, dataTypeClass = String.class),
+            @ApiImplicitParam(name="stream", value = "流ID", required = true, dataTypeClass = String.class),
+            @ApiImplicitParam(name="callId", value = "录像自鉴权ID", required = true, dataTypeClass = String.class),
+    })
+    @ResponseBody
+    @GetMapping(value = "/addStreamCallInfo", produces = "application/json;charset=UTF-8")
+    @PostMapping(value = "/addStreamCallInfo", produces = "application/json;charset=UTF-8")
+    public ResponseEntity<String> addStreamCallInfo(String app, String stream, String callId) {
+        String key = "Stream_Call_Info" + app + "_" + stream;
+        redisUtil.set(key, callId, -1);
+        return new ResponseEntity<>(null, HttpStatus.OK);
     }
 }

@@ -131,10 +131,11 @@ public class VideoFileService {
      * @param file
      * @throws ParseException
      */
-    public void handFile(File file) {
+    public void handFile(File file,String app, String stream) {
         FFprobe ffprobe = ffmpegExecUtils.getFfprobe();
         if(file.exists() && file.isFile() && !file.getName().startsWith(".")&& file.getName().endsWith(".mp4") && file.getName().indexOf(":") < 0) {
             try {
+
                 FFmpegProbeResult in = ffprobe.probe(file.getAbsolutePath());
                 double duration = in.getFormat().duration * 1000;
                 String endTimeStr = file.getName().replace(".mp4", "");
@@ -149,9 +150,23 @@ public class VideoFileService {
                 long endTime = startTime + durationLong;
                 endTime = endTime - endTime%1000;
 
-                String newName = file.getAbsolutePath().replace(file.getName(),
-                        simpleDateFormat.format(startTime) + "-" + simpleDateFormat.format(endTime) + "-" + durationLong + ".mp4");
-                file.renameTo(new File(newName));
+                String key = "Stream_Call_Info" + app + "_" + stream;
+                String callId = (String) redisUtil.get(key);
+                if (callId != null) {
+
+                    File newPath = new File(file.getParentFile().getParent() + "_" + callId + File.separator + file.getParentFile().getName());
+                    if (!newPath.exists()) {
+                        newPath.mkdirs();
+                    }
+                    String newName = newPath.getAbsolutePath() + File.separator+  simpleDateFormat.format(startTime) + "-" + simpleDateFormat.format(endTime) + "-" + durationLong + ".mp4";
+                    file.renameTo(new File(newName));
+                }else {
+                    String newName = file.getAbsolutePath().replace(file.getName(),
+                            simpleDateFormat.format(startTime) + "-" + simpleDateFormat.format(endTime) + "-" + durationLong + ".mp4");
+
+                    file.renameTo(new File(newName));
+                }
+
                 logger.debug("[处理文件] {}", file.getName());
             } catch (IOException e) {
                 logger.warn("文件可能以损坏[{}]", file.getAbsolutePath());
@@ -340,7 +355,9 @@ public class VideoFileService {
         logger.info("[录像合并] 开始合并，APP:{}, STREAM: {}, 任务ID：{}", app, stream, taskId);
         String destDir = "recordTemp" + File.separator + taskId + File.separator + app;
         File recordFile = new File(new File(userSettings.getRecord()).getParentFile().getAbsolutePath()  + File.separator + destDir );
-        if (!recordFile.exists()) recordFile.mkdirs();
+        if (!recordFile.exists()) {
+            recordFile.mkdirs();
+        }
         MergeOrCutTaskInfo mergeOrCutTaskInfo = new MergeOrCutTaskInfo();
         mergeOrCutTaskInfo.setId(taskId);
         mergeOrCutTaskInfo.setApp(app);
@@ -474,9 +491,15 @@ public class VideoFileService {
 
     public List<MergeOrCutTaskInfo> getTaskListForDownload(Boolean idEnd, String app, String stream, String taskId) {
         ArrayList<MergeOrCutTaskInfo> result = new ArrayList<>();
-        if (app == null) app = "*";
-        if (stream == null) stream = "*";
-        if (taskId == null) taskId = "*";
+        if (app == null) {
+            app = "*";
+        }
+        if (stream == null) {
+            stream = "*";
+        }
+        if (taskId == null) {
+            taskId = "*";
+        }
         List<Object> taskCatch = redisUtil.scan(String.format("%S_%S_%S_%S", keyStr, app, stream, taskId));
         for (int i = 0; i < taskCatch.size(); i++) {
             String keyItem = taskCatch.get(i).toString();
