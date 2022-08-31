@@ -2,16 +2,17 @@ package top.panll.assist.controller;
 
 import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.JSONObject;
-import io.swagger.annotations.Api;
-import io.swagger.annotations.ApiImplicitParam;
-import io.swagger.annotations.ApiImplicitParams;
-import io.swagger.annotations.ApiOperation;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import top.panll.assist.controller.bean.ControllerException;
+import top.panll.assist.controller.bean.ErrorCode;
 import top.panll.assist.controller.bean.WVPResult;
 import top.panll.assist.dto.MergeOrCutTaskInfo;
 import top.panll.assist.dto.SignInfo;
@@ -28,7 +29,7 @@ import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 import java.util.Map;
-@Api(tags = "录像管理")
+@Tag(name = "录像管理", description = "录像管理")
 @CrossOrigin
 @RestController
 @RequestMapping("/api/record")
@@ -49,40 +50,31 @@ public class RecordController {
      * 获取app+stream列表
      * @return
      */
-    @ApiOperation("分页获取app+stream的列表")
-    @ApiImplicitParams({
-            @ApiImplicitParam(name="page", value = "当前页", required = true, dataTypeClass = Integer.class),
-            @ApiImplicitParam(name="count", value = "每页查询数量", required = true, dataTypeClass = Integer.class),
-    })
+    @Operation(summary ="分页获取app+stream的列表")
+    @Parameter(name = "page", description = "当前页", required = true)
+    @Parameter(name = "count", description = "每页查询数量", required = true)
     @GetMapping(value = "/list")
     @ResponseBody
-    public WVPResult<PageInfo<Map<String, String>>> getList(@RequestParam int page,
+    public PageInfo<Map<String, String>> getList(@RequestParam int page,
                                                   @RequestParam int count){
-        WVPResult<PageInfo<Map<String, String>>> result = new WVPResult<>();
         List<Map<String, String>> appList = videoFileService.getList();
-        result.setCode(0);
-        result.setMsg("success");
 
         PageInfo<Map<String, String>> stringPageInfo = new PageInfo<>(appList);
         stringPageInfo.startPage(page, count);
-        result.setData(stringPageInfo);
-        return result;
+        return stringPageInfo;
     }
 
     /**
      * 分页获取app列表
      * @return
      */
-    @ApiOperation("分页获取app列表")
-    @ApiImplicitParams({
-            @ApiImplicitParam(name="page", value = "当前页", required = true, dataTypeClass = Integer.class),
-            @ApiImplicitParam(name="count", value = "每页查询数量", required = true, dataTypeClass = Integer.class),
-    })
+    @Operation(summary ="分页获取app列表")
+    @Parameter(name = "page", description = "当前页", required = true)
+    @Parameter(name = "count", description = "每页查询数量", required = true)
     @GetMapping(value = "/app/list")
     @ResponseBody
-    public WVPResult<PageInfo<String>> getAppList(@RequestParam int page,
+    public PageInfo<String> getAppList(@RequestParam int page,
                                                   @RequestParam int count){
-        WVPResult<PageInfo<String>> result = new WVPResult<>();
         List<String> resultData = new ArrayList<>();
         List<File> appList = videoFileService.getAppList(true);
         if (appList.size() > 0) {
@@ -90,36 +82,28 @@ public class RecordController {
                 resultData.add(file.getName());
             }
         }
-        result.setCode(0);
-        result.setMsg("success");
 
         PageInfo<String> stringPageInfo = new PageInfo<>(resultData);
         stringPageInfo.startPage(page, count);
-        result.setData(stringPageInfo);
-        return result;
+        return stringPageInfo;
     }
 
     /**
      * 分页stream列表
      * @return
      */
-    @ApiOperation("分页stream列表")
-    @ApiImplicitParams({
-            @ApiImplicitParam(name="page", value = "当前页", required = true, dataTypeClass = Integer.class),
-            @ApiImplicitParam(name="count", value = "每页查询数量", required = true, dataTypeClass = Integer.class),
-            @ApiImplicitParam(name="app", value = "应用名", required = true, dataTypeClass = String.class),
-    })
+    @Operation(summary ="分页stream列表")
+    @Parameter(name = "page", description = "当前页", required = true)
+    @Parameter(name = "count", description = "每页查询数量", required = true)
+    @Parameter(name = "app", description = "应用名", required = true)
     @GetMapping(value = "/stream/list")
     @ResponseBody
-    public WVPResult<PageInfo<String>> getStreamList(@RequestParam int page,
+    public PageInfo<String> getStreamList(@RequestParam int page,
                                                      @RequestParam int count,
                                                      @RequestParam String app ){
-        WVPResult<PageInfo<String>> result = new WVPResult<>();
         List<String> resultData = new ArrayList<>();
         if (app == null) {
-            result.setCode(400);
-            result.setMsg("app不能为空");
-            return result;
+            throw new ControllerException(ErrorCode.ERROR400.getCode(), "app不能为空");
         }
         List<File> streamList = videoFileService.getStreamList(app, true);
         if (streamList != null) {
@@ -127,69 +111,54 @@ public class RecordController {
                 resultData.add(file.getName());
             }
         }
-        result.setCode(0);
-        result.setMsg("success");
         PageInfo<String> stringPageInfo = new PageInfo<>(resultData);
         stringPageInfo.startPage(page, count);
-        result.setData(stringPageInfo);
-        return result;
+        return stringPageInfo;
     }
 
     /**
      * 获取日期文件夹列表
      * @return
      */
-    @ApiOperation("获取日期文件夹列表")
-    @ApiImplicitParams({
-            @ApiImplicitParam(name="year", value = "年", required = true, dataTypeClass = Integer.class),
-            @ApiImplicitParam(name="month", value = "月", required = true, dataTypeClass = Integer.class),
-            @ApiImplicitParam(name="app", value = "应用名", required = true, dataTypeClass = String.class),
-            @ApiImplicitParam(name="stream", value = "流ID", required = true, dataTypeClass = String.class),
-    })
+    @Operation(summary ="获取日期文件夹列表")
+    @Parameter(name = "year", description = "月", required = true)
+    @Parameter(name = "month", description = "年", required = true)
+    @Parameter(name = "app", description = "应用名", required = true)
+    @Parameter(name = "stream", description = "流ID", required = true)
     @GetMapping(value = "/date/list")
     @ResponseBody
-    public WVPResult<List<String>> getDateList( @RequestParam(required = false) Integer year,
+    public List<String> getDateList( @RequestParam(required = false) Integer year,
                                                 @RequestParam(required = false) Integer month,
                                                  @RequestParam String app,
                                                  @RequestParam String stream ){
-        WVPResult<List<String>> result = new WVPResult<>();
         List<String> resultData = new ArrayList<>();
         if (app == null) {
-            result.setCode(400);
-            result.setMsg("app不能为空");
-            return result;
+            throw new ControllerException(ErrorCode.ERROR400.getCode(), "app不能为空");
         };
         if (stream == null) {
-            result.setCode(400);
-            result.setMsg("stream不能为空");
-            return result;
+            throw new ControllerException(ErrorCode.ERROR400.getCode(), "stream不能为空");
         }
         List<File> dateList = videoFileService.getDateList(app, stream, year, month, true);
         for (File file : dateList) {
             resultData.add(file.getName());
         }
-        result.setCode(0);
-        result.setMsg("success");
-        result.setData(resultData);
-        return result;
+        return resultData;
     }
 
     /**
      * 获取视频文件列表
      * @return
      */
-    @ApiOperation("获取日期文件夹列表")
-    @ApiImplicitParams({
-            @ApiImplicitParam(name="page", value = "当前页", required = true, dataTypeClass = Integer.class),
-            @ApiImplicitParam(name="count", value = "每页查询数量", required = true, dataTypeClass = Integer.class),
-            @ApiImplicitParam(name="app", value = "应用名", required = true, dataTypeClass = String.class),
-            @ApiImplicitParam(name="stream", value = "流ID", required = true, dataTypeClass = String.class),
-            @ApiImplicitParam(name="startTime", value = "开始时间(yyyy-MM-dd HH:mm:ss)", required = false, dataTypeClass = String.class),
-            @ApiImplicitParam(name="endTime", value = "结束时间(yyyy-MM-dd HH:mm:ss)", required = false, dataTypeClass = String.class),
-    })
+    @Operation(summary ="获取日期文件夹列表")
+    @Parameter(name = "page", description = "当前页", required = true)
+    @Parameter(name = "count", description = "每页查询数量", required = true)
+    @Parameter(name = "app", description = "应用名", required = true)
+    @Parameter(name = "stream", description = "流ID", required = true)
+    @Parameter(name = "startTime", description = "开始时间(yyyy-MM-dd HH:mm:ss)", required = true)
+    @Parameter(name = "endTime", description = "结束时间(yyyy-MM-dd HH:mm:ss)", required = true)
     @GetMapping(value = "/file/list")
     @ResponseBody
-    public WVPResult<PageInfo<String>> getRecordList(@RequestParam int page,
+    public PageInfo<String> getRecordList(@RequestParam int page,
                                                      @RequestParam int count,
                                                      @RequestParam String app,
                                                      @RequestParam String stream,
@@ -197,7 +166,6 @@ public class RecordController {
                                                      @RequestParam(required = false) String endTime
     ){
 
-        WVPResult<PageInfo<String>> result = new WVPResult<>();
         // 开始时间与结束时间可不传或只传其一
         List<String> recordList = new ArrayList<>();
         try {
@@ -216,40 +184,33 @@ public class RecordController {
                     recordList.add(file.getName());
                 }
             }
-            result.setCode(0);
-            result.setMsg("success");
             PageInfo<String> stringPageInfo = new PageInfo<>(recordList);
             stringPageInfo.startPage(page, count);
-            result.setData(stringPageInfo);
+            return stringPageInfo;
         } catch (ParseException e) {
             logger.error("错误的开始时间[{}]或结束时间[{}]", startTime, endTime);
-            result.setCode(400);
-            result.setMsg("错误的开始时间或结束时间");
+            throw new ControllerException(ErrorCode.ERROR400.getCode(), "错误的开始时间或结束时间, e=" + e.getMessage());
         }
-        return result;
     }
 
 
     /**
      * 添加视频裁剪合并任务
      */
-    @ApiOperation("添加视频裁剪合并任务")
-    @ApiImplicitParams({
-            @ApiImplicitParam(name="app", value = "应用名", required = true, dataTypeClass = String.class),
-            @ApiImplicitParam(name="stream", value = "流ID", required = true, dataTypeClass = String.class),
-            @ApiImplicitParam(name="startTime", value = "开始时间(yyyy-MM-dd HH:mm:ss)", required = false, dataTypeClass = String.class),
-            @ApiImplicitParam(name="endTime", value = "结束时间(yyyy-MM-dd HH:mm:ss)", required = false, dataTypeClass = String.class),
-            @ApiImplicitParam(name="remoteHost", value = "服务的IP：端口（用于直接返回完整播放地址以及下载地址）", required = false, dataTypeClass = String.class),
-    })
+    @Operation(summary ="添加视频裁剪合并任务")
+    @Parameter(name = "app", description = "应用名", required = true)
+    @Parameter(name = "stream", description = "流ID", required = true)
+    @Parameter(name = "startTime", description = "开始时间(yyyy-MM-dd HH:mm:ss)", required = true)
+    @Parameter(name = "endTime", description = "结束时间(yyyy-MM-dd HH:mm:ss)", required = true)
+    @Parameter(name = "remoteHost", description = "服务的IP：端口（用于直接返回完整播放地址以及下载地址）", required = true)
     @GetMapping(value = "/file/download/task/add")
     @ResponseBody
-    public WVPResult<String> addTaskForDownload(@RequestParam String app,
+    public String addTaskForDownload(@RequestParam String app,
                                                 @RequestParam String stream,
                                                 @RequestParam(required = false) String startTime,
                                                 @RequestParam(required = false) String endTime,
                                                 @RequestParam(required = false) String remoteHost
     ){
-        WVPResult<String> result = new WVPResult<>();
         Date startTimeDate  = null;
         Date endTimeDate  = null;
         try {
@@ -263,111 +224,96 @@ public class RecordController {
             e.printStackTrace();
         }
         String id = videoFileService.mergeOrCut(app, stream, startTimeDate, endTimeDate, remoteHost);
-        result.setCode(0);
-        result.setMsg(id!= null?"success":"error： 可能未找到视频文件");
-        result.setData(id);
-        return result;
+        if (id== null) {
+            throw new ControllerException(ErrorCode.ERROR100.getCode(), "可能未找到视频文件");
+        }
+        return id;
     }
 
     /**
      * 查询视频裁剪合并任务列表
      */
-    @ApiOperation("查询视频裁剪合并任务列表")
-    @ApiImplicitParams({
-            @ApiImplicitParam(name="app", value = "应用名", required = false, dataTypeClass = String.class),
-            @ApiImplicitParam(name="stream", value = "流ID", required = false, dataTypeClass = String.class),
-            @ApiImplicitParam(name="taskId", value = "任务ID", required = false, dataTypeClass = String.class),
-            @ApiImplicitParam(name="isEnd", value = "是否结束", required = false, dataTypeClass = Boolean.class),
-    })
+    @Operation(summary ="查询视频裁剪合并任务列表")
+    @Parameter(name = "app", description = "应用名", required = true)
+    @Parameter(name = "stream", description = "流ID", required = true)
+    @Parameter(name = "taskId", description = "任务ID", required = true)
+    @Parameter(name = "isEnd", description = "是否结束", required = true)
     @GetMapping(value = "/file/download/task/list")
     @ResponseBody
-    public WVPResult<List<MergeOrCutTaskInfo>> getTaskListForDownload(
+    public List<MergeOrCutTaskInfo> getTaskListForDownload(
             @RequestParam(required = false) String app,
             @RequestParam(required = false) String stream,
             @RequestParam(required = false) String taskId,
             @RequestParam(required = false) Boolean isEnd){
         List<MergeOrCutTaskInfo> taskList = videoFileService.getTaskListForDownload(isEnd, app, stream, taskId);
-        WVPResult<List<MergeOrCutTaskInfo>> result = new WVPResult<>();
-        result.setCode(0);
-        result.setMsg(taskList !=  null?"success":"error");
-        result.setData(taskList);
-        return result;
+        if (taskList == null) {
+            throw new ControllerException(ErrorCode.ERROR100);
+        }
+        return taskList;
     }
 
     /**
      * 收藏录像（被收藏的录像不会被清理任务清理）
      */
-    @ApiOperation("收藏录像（被收藏的录像不会被清理任务清理）")
-    @ApiImplicitParams({
-            @ApiImplicitParam(name="type", value = "类型", required = true, dataTypeClass = String.class),
-            @ApiImplicitParam(name="app", value = "应用名", required = true, dataTypeClass = String.class),
-            @ApiImplicitParam(name="stream", value = "流ID", required = true, dataTypeClass = String.class),
-    })
+    @Operation(summary ="收藏录像（被收藏的录像不会被清理任务清理）")
+    @Parameter(name = "type", description = "类型", required = true)
+    @Parameter(name = "app", description = "应用名", required = true)
+    @Parameter(name = "stream", description = "流ID", required = true)
     @GetMapping(value = "/file/collection/add")
     @ResponseBody
-    public WVPResult<String> collection(
+    public void collection(
             @RequestParam(required = true) String type,
             @RequestParam(required = true) String app,
             @RequestParam(required = true) String stream){
 
         boolean collectionResult = videoFileService.collection(app, stream, type);
-        WVPResult<String> result = new WVPResult<>();
-        result.setCode(0);
-        result.setMsg(collectionResult ?"success":"error");
-        return result;
+        if (!collectionResult) {
+            throw new ControllerException(ErrorCode.ERROR100);
+        }
     }
 
     /**
      * 移除收藏录像
      */
-    @ApiOperation("移除收藏录像")
-    @ApiImplicitParams({
-            @ApiImplicitParam(name="type", value = "类型", required = true, dataTypeClass = String.class),
-            @ApiImplicitParam(name="app", value = "应用名", required = true, dataTypeClass = String.class),
-            @ApiImplicitParam(name="stream", value = "流ID", required = true, dataTypeClass = String.class),
-    })
+    @Operation(summary ="移除收藏录像")
+    @Parameter(name = "type", description = "类型", required = true)
+    @Parameter(name = "app", description = "应用名", required = true)
+    @Parameter(name = "stream", description = "流ID", required = true)
     @GetMapping(value = "/file/collection/remove")
     @ResponseBody
-    public WVPResult<String> removeCollection(
+    public void removeCollection(
             @RequestParam(required = true) String type,
             @RequestParam(required = true) String app,
             @RequestParam(required = true) String stream){
 
         boolean collectionResult = videoFileService.removeCollection(app, stream, type);
-        WVPResult<String> result = new WVPResult<>();
-        result.setCode(0);
-        result.setMsg(collectionResult ?"success":"error");
-        return result;
+        if (!collectionResult) {
+            throw new ControllerException(ErrorCode.ERROR100);
+        }
     }
 
     /**
      * 收藏录像列表
      */
-    @ApiOperation("收藏录像列表")
-    @ApiImplicitParams({
-            @ApiImplicitParam(name="type", value = "类型", required = true, dataTypeClass = String.class),
-            @ApiImplicitParam(name="app", value = "应用名", required = false, dataTypeClass = String.class),
-            @ApiImplicitParam(name="stream", value = "流ID", required = false, dataTypeClass = String.class),
-    })
+    @Operation(summary ="收藏录像列表")
+    @Parameter(name = "type", description = "类型", required = false)
+    @Parameter(name = "app", description = "应用名", required = false)
+    @Parameter(name = "stream", description = "流ID", required = false)
     @GetMapping(value = "/file/collection/list")
     @ResponseBody
-    public WVPResult<List<SignInfo>> collectionList(
+    public List<SignInfo> collectionList(
             @RequestParam(required = false) String type,
             @RequestParam(required = false) String app,
             @RequestParam(required = false) String stream){
 
         List<SignInfo> signInfos = videoFileService.getCollectionList(app, stream, type);
-        WVPResult<List<SignInfo>> result = new WVPResult<>();
-        result.setCode(0);
-        result.setMsg(signInfos != null ?"success":"error");
-        result.setData(signInfos);
-        return result;
+        return signInfos;
     }
 
     /**
      * 中止视频裁剪合并任务列表
      */
-    @ApiOperation("中止视频裁剪合并任务列表(暂不支持)")
+    @Operation(summary ="中止视频裁剪合并任务列表(暂不支持)")
     @GetMapping(value = "/file/download/task/stop")
     @ResponseBody
     public WVPResult<String> stopTaskForDownload(@RequestParam String taskId){
@@ -397,7 +343,9 @@ public class RecordController {
         String app = json.getString("app");
         String stream = json.getString("stream");
         logger.debug("ZLM 录制完成，参数：" + file_path);
-        if (file_path == null) return new ResponseEntity<String>(ret.toString(), HttpStatus.OK);
+        if (file_path == null) {
+            return new ResponseEntity<String>(ret.toString(), HttpStatus.OK);
+        }
         videoFileService.handFile(new File(file_path), app, stream);
 
         return new ResponseEntity<String>(ret.toString(), HttpStatus.OK);
@@ -406,54 +354,39 @@ public class RecordController {
     /**
      * 磁盘空间查询
      */
-    @ApiOperation("磁盘空间查询")
+    @Operation(summary ="磁盘空间查询")
     @ResponseBody
     @GetMapping(value = "/space", produces = "application/json;charset=UTF-8")
-    public ResponseEntity<String> getSpace() {
-        JSONObject ret = new JSONObject();
-        ret.put("code", 0);
-        ret.put("msg", "success");
-        SpaceInfo spaceInfo = videoFileService.getSpaceInfo();
-        ret.put("data", JSON.toJSON(spaceInfo));
-        return new ResponseEntity<>(ret.toString(), HttpStatus.OK);
-    }
-
-    /**
-     * 录像文件的时长
-     */
-    @ApiOperation("录像文件的时长")
-    @ApiImplicitParams({
-            @ApiImplicitParam(name="app", value = "应用名", required = true, dataTypeClass = String.class),
-            @ApiImplicitParam(name="stream", value = "流ID", required = true, dataTypeClass = String.class),
-            @ApiImplicitParam(name="recordIng", value = "是否录制中", required = false, dataTypeClass = String.class),
-    })
-    @ResponseBody
-    @GetMapping(value = "/file/duration", produces = "application/json;charset=UTF-8")
-    @PostMapping(value = "/file/duration", produces = "application/json;charset=UTF-8")
-    public ResponseEntity<String> fileDuration( @RequestParam String app, @RequestParam String stream) {
-        JSONObject ret = new JSONObject();
-        ret.put("code", 0);
-        ret.put("msg", "success");
-        long duration = videoFileService.fileDuration(app, stream);
-        ret.put("data", duration);
-        return new ResponseEntity<>(ret.toString(), HttpStatus.OK);
+    public SpaceInfo getSpace() {
+        return videoFileService.getSpaceInfo();
     }
 
     /**
      * 增加推流的鉴权信息，用于录像存储使用
      */
-    @ApiOperation("增加推流的鉴权信息")
-    @ApiImplicitParams({
-            @ApiImplicitParam(name="app", value = "应用名", required = true, dataTypeClass = String.class),
-            @ApiImplicitParam(name="stream", value = "流ID", required = true, dataTypeClass = String.class),
-            @ApiImplicitParam(name="callId", value = "录像自鉴权ID", required = true, dataTypeClass = String.class),
-    })
+    @Operation(summary ="增加推流的鉴权信息")
+    @Parameter(name = "app", description = "应用名", required = true)
+    @Parameter(name = "stream", description = "流ID", required = true)
+    @Parameter(name = "callId", description = "录像自鉴权ID", required = true)
     @ResponseBody
     @GetMapping(value = "/addStreamCallInfo", produces = "application/json;charset=UTF-8")
     @PostMapping(value = "/addStreamCallInfo", produces = "application/json;charset=UTF-8")
-    public ResponseEntity<String> addStreamCallInfo(String app, String stream, String callId) {
+    public void addStreamCallInfo(String app, String stream, String callId) {
         String key = "Stream_Call_Info" + app + "_" + stream;
         redisUtil.set(key, callId, -1);
-        return new ResponseEntity<>(null, HttpStatus.OK);
+    }
+
+    /**
+     * 录像文件的时长
+     */
+    @Operation(summary ="录像文件的时长")
+    @Parameter(name = "app", description = "应用名", required = true)
+    @Parameter(name = "stream", description = "流ID", required = true)
+    @Parameter(name = "recordIng", description = "是否录制中", required = true)
+    @ResponseBody
+    @GetMapping(value = "/file/duration", produces = "application/json;charset=UTF-8")
+    @PostMapping(value = "/file/duration", produces = "application/json;charset=UTF-8")
+    public long fileDuration( @RequestParam String app, @RequestParam String stream) {
+        return videoFileService.fileDuration(app, stream);
     }
 }

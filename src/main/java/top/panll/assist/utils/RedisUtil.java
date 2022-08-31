@@ -707,28 +707,18 @@ public class RedisUtil {
      * @return
      */
     public List<Object> scan(String query) {
-        Set<String> keys = (Set<String>) redisTemplate.execute((RedisCallback<Set<String>>) connection -> {
-            Set<String> keysTmp = new HashSet<>();
-            Cursor<byte[]> cursor = connection.scan(new ScanOptions.ScanOptionsBuilder().match(query).count(1000).build());
-            while (cursor.hasNext()) {
-                keysTmp.add(new String(cursor.next()));
+        Set<String> resultKeys = redisTemplate.execute((RedisCallback<Set<String>>) connection -> {
+            ScanOptions scanOptions = ScanOptions.scanOptions().match("*" + query + "*").count(1000).build();
+            Cursor<byte[]> scan = connection.scan(scanOptions);
+            Set<String> keys = new HashSet<>();
+            while (scan.hasNext()) {
+                byte[] next = scan.next();
+                keys.add(new String(next));
             }
-            return keysTmp;
+            return keys;
         });
-//        Set<String> keys = (Set<String>) redisTemplate.execute(new RedisCallback<Set<String>>(){
-//
-//            @Override
-//            public Set<String> doInRedis(RedisConnection connection) throws DataAccessException {
-//                Set<String> keysTmp = new HashSet<>();
-//                Cursor<byte[]> cursor = connection.scan(new ScanOptions.ScanOptionsBuilder().match(query).count(1000).build());
-//                while (cursor.hasNext()) {
-//                    keysTmp.add(new String(cursor.next()));
-//                }
-//            return keysTmp;
-//            }
-//        });
 
-        return new ArrayList<>(keys);
+        return new ArrayList<>(resultKeys);
     }
 
     public void convertAndSend(String channel, Object msg) {

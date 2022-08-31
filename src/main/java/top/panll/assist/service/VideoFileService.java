@@ -518,7 +518,6 @@ public class VideoFileService {
                 }else {
                     result.add((MergeOrCutTaskInfo)redisUtil.get(keyItem));
                 }
-
             }
         }
         result.sort((MergeOrCutTaskInfo m1, MergeOrCutTaskInfo m2)->{
