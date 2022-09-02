@@ -7,6 +7,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 import org.springframework.util.StringUtils;
+import top.panll.assist.dto.AssistConstants;
 import top.panll.assist.dto.MergeOrCutTaskInfo;
 import top.panll.assist.dto.UserSettings;
 import top.panll.assist.utils.RedisUtil;
@@ -34,8 +35,6 @@ public class FileManagerTimer {
 
     @Autowired
     private RedisUtil redisUtil;
-
-    private final String keyStr = "MERGEORCUT";
 
 //    @Scheduled(fixedDelay = 2000)   //测试 20秒执行一次
     @Scheduled(cron = "0 0 0 * * ?")   //每天的0点执行
@@ -128,7 +127,7 @@ public class FileManagerTimer {
             }
         }
         // 清理redis记录
-        String key = String.format("%S_*_*_*", keyStr);
+        String key = String.format("%S_%S_*_*_*", AssistConstants.MERGEORCUT, userSettings.getId());
         List<Object> taskKeys = redisUtil.scan(key);
         for (Object taskKeyObj : taskKeys) {
             String taskKey = (String) taskKeyObj;

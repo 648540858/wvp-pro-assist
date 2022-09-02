@@ -49,9 +49,6 @@ public class FFmpegExecUtils implements InitializingBean{
     @Autowired
     private UserSettings userSettings;
 
-    @Autowired
-    private RedisUtil redisUtil;
-
     private FFprobe ffprobe;
     private FFmpeg ffmpeg;
 

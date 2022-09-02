@@ -10,11 +10,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.util.DigestUtils;
-import top.panll.assist.dto.SignInfo;
-import top.panll.assist.dto.SpaceInfo;
+import top.panll.assist.dto.*;
 import top.panll.assist.utils.RedisUtil;
-import top.panll.assist.dto.MergeOrCutTaskInfo;
-import top.panll.assist.dto.UserSettings;
 import top.panll.assist.utils.DateUtils;
 
 import java.io.File;
@@ -39,17 +36,12 @@ public class VideoFileService {
     private RedisUtil redisUtil;
 
     @Autowired
-    private RedisTemplate redisTemplate;
-
-    @Autowired
     private FFmpegExecUtils ffmpegExecUtils;
 
 
 
     private final SimpleDateFormat simpleDateFormat = new SimpleDateFormat("yyyy-MM-dd");
     private final SimpleDateFormat simpleDateFormatForTime = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
-
-    private final String keyStr = "MERGEORCUT";
 
     public List<File> getAppList(Boolean sort) {
         File recordFile = new File(userSettings.getRecord());
@@ -150,7 +142,7 @@ public class VideoFileService {
                 long endTime = startTime + durationLong;
                 endTime = endTime - endTime%1000;
 
-                String key = "Stream_Call_Info" + app + "_" + stream;
+                String key = AssistConstants.STREAM_CALL_INFO + userSettings.getId() + "_" + app + "_" + stream;
                 String callId = (String) redisUtil.get(key);
                 if (callId != null) {
 
@@ -396,9 +388,8 @@ public class VideoFileService {
                 mergeOrCutTaskInfo.setDownloadFile(remoteHost + "/download.html?url=" + relativize);
                 mergeOrCutTaskInfo.setPlayFile(remoteHost + "/" + relativize);
             }
-            String key = String.format("%S_%S_%S_%S", keyStr, mergeOrCutTaskInfo.getApp(), mergeOrCutTaskInfo.getStream(), mergeOrCutTaskInfo.getId());
+            String key = String.format("%S_%S_%S_%S_%S", AssistConstants.MERGEORCUT , userSettings.getId(), mergeOrCutTaskInfo.getApp(), mergeOrCutTaskInfo.getStream(), mergeOrCutTaskInfo.getId());
             redisUtil.set(key, mergeOrCutTaskInfo);
-            redisUtil.convertAndSend("topic_mergeorcut_end", mergeOrCutTaskInfo);
             logger.info("[录像合并] 合并完成，APP:{}, STREAM: {}, 任务ID：{}", app, stream, taskId);
         }else {
             ffmpegExecUtils.mergeOrCutFile(filesInTime, recordFile, stream, (status, percentage, result)->{
@@ -413,13 +404,11 @@ public class VideoFileService {
                         mergeOrCutTaskInfo.setDownloadFile(remoteHost + "/download.html?url=" + relativize);
                         mergeOrCutTaskInfo.setPlayFile(remoteHost + "/" + relativize);
                     }
-                    redisUtil.convertAndSend("topic_mergeorcut_end", mergeOrCutTaskInfo);
                     logger.info("[录像合并] 合并完成，APP:{}, STREAM: {}, 任务ID：{}", app, stream, taskId);
                 }else {
                     mergeOrCutTaskInfo.setPercentage(percentage + "");
-                    redisUtil.convertAndSend("topic_mergeorcut_continue",  mergeOrCutTaskInfo);
                 }
-                String key = String.format("%S_%S_%S_%S", keyStr, mergeOrCutTaskInfo.getApp(), mergeOrCutTaskInfo.getStream(), mergeOrCutTaskInfo.getId());
+                String key = String.format("%S_%S_%S_%S_%S", AssistConstants.MERGEORCUT, userSettings.getId(), mergeOrCutTaskInfo.getApp(), mergeOrCutTaskInfo.getStream(), mergeOrCutTaskInfo.getId());
                 redisUtil.set(key, mergeOrCutTaskInfo);
             });
         }
@@ -500,7 +489,8 @@ public class VideoFileService {
         if (taskId == null) {
             taskId = "*";
         }
-        List<Object> taskCatch = redisUtil.scan(String.format("%S_%S_%S_%S", keyStr, app, stream, taskId));
+        List<Object> taskCatch = redisUtil.scan(String.format("%S_%S_%S_%S_%S", AssistConstants.MERGEORCUT,
+                userSettings.getId(), app, stream, taskId));
         for (int i = 0; i < taskCatch.size(); i++) {
             String keyItem = taskCatch.get(i).toString();
             MergeOrCutTaskInfo mergeOrCutTaskInfo = (MergeOrCutTaskInfo)redisUtil.get(keyItem);

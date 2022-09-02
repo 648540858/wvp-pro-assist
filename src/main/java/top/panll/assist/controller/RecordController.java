@@ -14,9 +14,7 @@ import org.springframework.web.bind.annotation.*;
 import top.panll.assist.controller.bean.ControllerException;
 import top.panll.assist.controller.bean.ErrorCode;
 import top.panll.assist.controller.bean.WVPResult;
-import top.panll.assist.dto.MergeOrCutTaskInfo;
-import top.panll.assist.dto.SignInfo;
-import top.panll.assist.dto.SpaceInfo;
+import top.panll.assist.dto.*;
 import top.panll.assist.service.VideoFileService;
 import top.panll.assist.utils.PageInfo;
 import top.panll.assist.utils.RedisUtil;
@@ -42,6 +40,9 @@ public class RecordController {
 
     @Autowired
     private RedisUtil redisUtil;
+
+    @Autowired
+    private UserSettings userSettings;
 
     private SimpleDateFormat formatter = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
 
@@ -372,7 +373,7 @@ public class RecordController {
     @GetMapping(value = "/addStreamCallInfo", produces = "application/json;charset=UTF-8")
     @PostMapping(value = "/addStreamCallInfo", produces = "application/json;charset=UTF-8")
     public void addStreamCallInfo(String app, String stream, String callId) {
-        String key = "Stream_Call_Info" + app + "_" + stream;
+        String key = AssistConstants.STREAM_CALL_INFO + userSettings.getId() + "_" + app + "_" + stream;
         redisUtil.set(key, callId, -1);
     }
 

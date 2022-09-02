@@ -3,8 +3,14 @@ package top.panll.assist.dto;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
+/**
+ * @author lin
+ */
 @Component
 public class UserSettings {
+
+    @Value("${userSettings.id}")
+    private String id;
 
     @Value("${userSettings.record}")
     private String record;
@@ -23,6 +29,14 @@ public class UserSettings {
 
     @Value("${userSettings.threads:2}")
     private int threads;
+
+    public String getId() {
+        return id;
+    }
+
+    public void setId(String id) {
+        this.id = id;
+    }
 
     public String getRecord() {
         return record;
