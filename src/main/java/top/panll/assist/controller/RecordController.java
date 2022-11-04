@@ -5,6 +5,7 @@ import com.alibaba.fastjson.JSONObject;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import org.apache.commons.io.FileUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -344,10 +345,17 @@ public class RecordController {
         String app = json.getString("app");
         String stream = json.getString("stream");
         logger.debug("ZLM 录制完成，参数：" + file_path);
+
         if (file_path == null) {
             return new ResponseEntity<String>(ret.toString(), HttpStatus.OK);
         }
-        videoFileService.handFile(new File(file_path), app, stream);
+        if (userSettings.getRecordDay() <= 0) {
+            logger.info("录像保存事件为{}天，直接删除: {}", userSettings.getRecordDay(), file_path);
+            FileUtils.deleteQuietly(new File(file_path));
+        }else {
+            videoFileService.handFile(new File(file_path), app, stream);
+        }
+
 
         return new ResponseEntity<String>(ret.toString(), HttpStatus.OK);
     }

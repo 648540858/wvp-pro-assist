@@ -42,9 +42,12 @@ public class FileManagerTimer {
         int recordDay = userSettings.getRecordDay();
         Date lastDate=new Date();
         Calendar lastCalendar = Calendar.getInstance();
-        lastCalendar.setTime(lastDate);
-        lastCalendar.add(Calendar.DAY_OF_MONTH, 0 - recordDay);
-        lastDate = lastCalendar.getTime();
+        if (recordDay > 0) {
+            lastCalendar.setTime(lastDate);
+            lastCalendar.add(Calendar.DAY_OF_MONTH, 0 - recordDay);
+            lastDate = lastCalendar.getTime();
+        }
+
         logger.info("[录像巡查]移除 {} 之前的文件", formatter.format(lastDate));
         File recordFileDir = new File(userSettings.getRecord());
         if (recordFileDir.canWrite()) {

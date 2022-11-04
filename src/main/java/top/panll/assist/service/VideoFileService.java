@@ -162,7 +162,6 @@ public class VideoFileService {
                 logger.debug("[处理文件] {}", file.getName());
             } catch (IOException e) {
                 logger.warn("文件可能以损坏[{}]", file.getAbsolutePath());
-//                e.printStackTrace();
             } catch (ParseException e) {
                 logger.error("时间格式化失败", e.getMessage());
             }
