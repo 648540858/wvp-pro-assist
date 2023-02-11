@@ -114,7 +114,7 @@ public class StartConfig implements CommandLineRunner {
                     "        (function(){\n" +
                     "            let searchParams = new URLSearchParams(location.search);\n" +
                     "            var download = document.getElementById(\"download\");\n" +
-                    "            download.setAttribute(\"href\", searchParams.get(\"url\"))\n" +
+                    "            download.setAttribute(\"href\",window.location.origin+'/'+ searchParams.get(\"url\"))\n" +
                     "            download.click()\n" +
                     "            setTimeout(()=>{\n" +
                     "                window.location.href=\"about:blank\";\n" +
