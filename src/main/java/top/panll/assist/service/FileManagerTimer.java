@@ -39,6 +39,9 @@ public class FileManagerTimer {
 //    @Scheduled(fixedDelay = 2000)   //测试 20秒执行一次
     @Scheduled(cron = "0 0 0 * * ?")   //每天的0点执行
     public void execute(){
+        if (userSettings.getRecord() == null) {
+            return;
+        }
         int recordDay = userSettings.getRecordDay();
         Date lastDate=new Date();
         Calendar lastCalendar = Calendar.getInstance();
@@ -115,7 +118,7 @@ public class FileManagerTimer {
         lastTempCalendar.add(Calendar.DAY_OF_MONTH, 0 - recordTempDay);
         lastTempDate = lastTempCalendar.getTime();
         logger.info("[录像巡查]移除合并任务临时文件 {} 之前的文件", formatter.format(lastTempDate));
-        File recordTempFile = new File(recordFileDir.getParentFile().getAbsolutePath() + File.separator +  "recordTemp");
+        File recordTempFile = new File(userSettings.getRecord() +  "recordTemp");
         if (recordTempFile.exists() && recordTempFile.isDirectory() && recordTempFile.canWrite()) {
             File[] tempFiles = recordTempFile.listFiles();
             for (File tempFile : tempFiles) {

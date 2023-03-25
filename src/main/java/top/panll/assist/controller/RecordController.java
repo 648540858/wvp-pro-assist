@@ -24,10 +24,8 @@ import javax.servlet.http.HttpServletRequest;
 import java.io.File;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
-import java.util.ArrayList;
-import java.util.Date;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
+
 @Tag(name = "录像管理", description = "录像管理")
 @CrossOrigin
 @RestController
@@ -49,6 +47,16 @@ public class RecordController {
 
 
     /**
+     * 获取Assist服务配置信息
+     */
+    @Operation(summary ="获取Assist服务配置信息")
+    @GetMapping(value = "/info")
+    @ResponseBody
+    public UserSettings getInfo(){
+        return userSettings;
+    }
+
+    /**
      * 获取app+stream列表
      * @return
      */
@@ -58,7 +66,7 @@ public class RecordController {
     @GetMapping(value = "/list")
     @ResponseBody
     public PageInfo<Map<String, String>> getList(@RequestParam int page,
-                                                  @RequestParam int count){
+                                                 @RequestParam int count){
         List<Map<String, String>> appList = videoFileService.getList();
 
         PageInfo<Map<String, String>> stringPageInfo = new PageInfo<>(appList);
@@ -84,6 +92,7 @@ public class RecordController {
                 resultData.add(file.getName());
             }
         }
+        Collections.sort(resultData);
 
         PageInfo<String> stringPageInfo = new PageInfo<>(resultData);
         stringPageInfo.startPage(page, count);
@@ -342,9 +351,10 @@ public class RecordController {
         ret.put("code", 0);
         ret.put("msg", "success");
         String file_path = json.getString("file_path");
+
         String app = json.getString("app");
         String stream = json.getString("stream");
-        logger.debug("ZLM 录制完成，参数：" + file_path);
+        logger.debug("ZLM 录制完成，文件路径：" + file_path);
 
         if (file_path == null) {
             return new ResponseEntity<String>(ret.toString(), HttpStatus.OK);
@@ -355,7 +365,6 @@ public class RecordController {
         }else {
             videoFileService.handFile(new File(file_path), app, stream);
         }
-
 
         return new ResponseEntity<String>(ret.toString(), HttpStatus.OK);
     }

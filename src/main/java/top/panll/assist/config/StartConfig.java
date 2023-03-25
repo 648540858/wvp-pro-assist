@@ -41,29 +41,39 @@ public class StartConfig implements CommandLineRunner {
         if (!record.endsWith(File.separator)) {
             userSettings.setRecord(userSettings.getRecord() + File.separator);
         }
+
         File recordFile = new File(record);
-        if (!recordFile.exists() || !recordFile.isDirectory()) {
-            logger.error("[userSettings.record]配置错误，请检查路径是否存在");
-            System.exit(1);
+        if (!recordFile.exists()){
+            logger.warn("[userSettings.record]路径不存在，开始创建");
+            boolean mkResult = recordFile.mkdirs();
+            if (!mkResult) {
+                logger.info("[userSettings.record]目录创建失败");
+                System.exit(1);
+            }
+        }else {
+            if ( !recordFile.isDirectory()) {
+                logger.warn("[userSettings.record]路径是文件，请修改为目录");
+                System.exit(1);
+            }
+            if (!recordFile.canRead()) {
+                logger.error("[userSettings.record]路径无法读取");
+                System.exit(1);
+            }
+            if (!recordFile.canWrite()) {
+                logger.error("[userSettings.record]路径无法写入");
+                System.exit(1);
+            }
         }
-        if (!recordFile.canRead()) {
-            logger.error("[userSettings.record]路径无法读取");
-            System.exit(1);
-        }
-        if (!recordFile.canWrite()) {
-            logger.error("[userSettings.record]路径无法写入");
-            System.exit(1);
-        }
-        // 在zlm目录写入assist下载页面
-        writeAssistDownPage(recordFile);
+
         try {
 
-//            FFmpegExecUtils.getInstance().ffmpeg = ffmpeg;
-//            FFmpegExecUtils.getInstance().ffprobe = ffprobe;
             // 对目录进行预整理
             File[] appFiles = recordFile.listFiles();
             if (appFiles != null && appFiles.length > 0) {
                 for (File appFile : appFiles) {
+                    if (appFile.getName().equals("recordTemp")) {
+                        continue;
+                    }
                     File[] streamFiles = appFile.listFiles();
                     if (streamFiles != null && streamFiles.length > 0) {
                         for (File streamFile : streamFiles) {
@@ -91,48 +101,48 @@ public class StartConfig implements CommandLineRunner {
         }
     }
 
-    private void writeAssistDownPage(File recordFile) {
-        try {
-            File file = new File(recordFile.getParentFile().getAbsolutePath(), "download.html");
-            if (file.exists()) {
-                file.delete();
-            }
-            file.createNewFile();
-            FileOutputStream fs = new FileOutputStream(file);
-            StringBuffer stringBuffer = new StringBuffer();
-            String content = "<!DOCTYPE html>\n" +
-                    "<html lang=\"en\">\n" +
-                    "<head>\n" +
-                    "    <meta charset=\"UTF-8\">\n" +
-                    "    <meta http-equiv=\"X-UA-Compatible\" content=\"IE=edge\">\n" +
-                    "    <meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\">\n" +
-                    "    <title>下载</title>\n" +
-                    "</head>\n" +
-                    "<body>\n" +
-                    "    <a id=\"download\" download />\n" +
-                    "    <script>\n" +
-                    "        (function(){\n" +
-                    "            let searchParams = new URLSearchParams(location.search);\n" +
-                    "            var download = document.getElementById(\"download\");\n" +
-                    "            download.setAttribute(\"href\", searchParams.get(\"url\"))\n" +
-                    "            download.click()\n" +
-                    "            setTimeout(()=>{\n" +
-                    "                window.location.href=\"about:blank\";\n" +
-                    "\t\t\t          window.close();\n" +
-                    "            },200)\n" +
-                    "        })();\n" +
-                    "       \n" +
-                    "    </script>\n" +
-                    "</body>\n" +
-                    "</html>";
-            fs.write(content.getBytes(StandardCharsets.UTF_8));
-            logger.info("已写入html配置页面： " + file.getAbsolutePath());
-        } catch (FileNotFoundException e) {
-            logger.error("写入html页面错误", e);
-        } catch (IOException e) {
-            logger.error("写入html页面错误", e);
-        }
-
-
-    }
+//    private void writeAssistDownPage(File recordFile) {
+//        try {
+//            File file = new File(recordFile.getParentFile().getAbsolutePath(), "download.html");
+//            if (file.exists()) {
+//                file.delete();
+//            }
+//            file.createNewFile();
+//            FileOutputStream fs = new FileOutputStream(file);
+//            StringBuffer stringBuffer = new StringBuffer();
+//            String content = "<!DOCTYPE html>\n" +
+//                    "<html lang=\"en\">\n" +
+//                    "<head>\n" +
+//                    "    <meta charset=\"UTF-8\">\n" +
+//                    "    <meta http-equiv=\"X-UA-Compatible\" content=\"IE=edge\">\n" +
+//                    "    <meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\">\n" +
+//                    "    <title>下载</title>\n" +
+//                    "</head>\n" +
+//                    "<body>\n" +
+//                    "    <a id=\"download\" download />\n" +
+//                    "    <script>\n" +
+//                    "        (function(){\n" +
+//                    "            let searchParams = new URLSearchParams(location.search);\n" +
+//                    "            var download = document.getElementById(\"download\");\n" +
+//                    "            download.setAttribute(\"href\", searchParams.get(\"url\"))\n" +
+//                    "            download.click()\n" +
+//                    "            setTimeout(()=>{\n" +
+//                    "                window.location.href=\"about:blank\";\n" +
+//                    "\t\t\t          window.close();\n" +
+//                    "            },200)\n" +
+//                    "        })();\n" +
+//                    "       \n" +
+//                    "    </script>\n" +
+//                    "</body>\n" +
+//                    "</html>";
+//            fs.write(content.getBytes(StandardCharsets.UTF_8));
+//            logger.info("已写入html配置页面： " + file.getAbsolutePath());
+//        } catch (FileNotFoundException e) {
+//            logger.error("写入html页面错误", e);
+//        } catch (IOException e) {
+//            logger.error("写入html页面错误", e);
+//        }
+//
+//
+//    }
 }

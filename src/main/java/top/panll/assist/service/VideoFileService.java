@@ -48,7 +48,7 @@ public class VideoFileService {
         if (recordFile.isDirectory()) {
             File[] files = recordFile.listFiles((File dir, String name) -> {
                 File currentFile = new File(dir.getAbsolutePath() + File.separator + name);
-                return  currentFile.isDirectory();
+                return  currentFile.isDirectory() && !name.equals("recordTemp");
             });
             List<File> result = Arrays.asList(files);
             if (sort != null && sort) {
@@ -144,22 +144,17 @@ public class VideoFileService {
 
                 String key = AssistConstants.STREAM_CALL_INFO + userSettings.getId() + "_" + app + "_" + stream;
                 String callId = (String) redisUtil.get(key);
-                if (callId != null) {
 
-                    File newPath = new File(file.getParentFile().getParent() + "_" + callId + File.separator + file.getParentFile().getName());
-                    if (!newPath.exists()) {
-                        newPath.mkdirs();
-                    }
-                    String newName = newPath.getAbsolutePath() + File.separator+  simpleDateFormat.format(startTime) + "-" + simpleDateFormat.format(endTime) + "-" + durationLong + ".mp4";
-                    file.renameTo(new File(newName));
-                }else {
-                    String newName = file.getAbsolutePath().replace(file.getName(),
-                            simpleDateFormat.format(startTime) + "-" + simpleDateFormat.format(endTime) + "-" + durationLong + ".mp4");
-
-                    file.renameTo(new File(newName));
+                String streamNew = (callId == null? stream : stream + "_" + callId);
+                File newPath = new File(userSettings.getRecord() + File.separator +  app + File.separator + streamNew + File.separator + DateUtils.getDateStr(new Date(startTime)));
+                if (!newPath.exists()) {
+                    newPath.mkdirs();
                 }
 
-                logger.debug("[处理文件] {}", file.getName());
+                String newName = newPath.getAbsolutePath() + File.separator+  simpleDateFormat.format(startTime) + "-" + simpleDateFormat.format(endTime) + "-" + durationLong + ".mp4";
+                file.renameTo(new File(newName));
+                System.out.println(file.getAbsolutePath());
+                logger.info("[处理文件] {}", file.getName());
             } catch (IOException e) {
                 logger.warn("文件可能以损坏[{}]", file.getAbsolutePath());
             } catch (ParseException e) {
@@ -339,13 +334,13 @@ public class VideoFileService {
     public String mergeOrCut(String app, String stream, Date startTime, Date endTime, String remoteHost) {
         List<File> filesInTime = this.getFilesInTime(app, stream, startTime, endTime);
         if (filesInTime== null || filesInTime.size() == 0){
-            logger.info("此时间段未未找到视频文件");
+            logger.info("此时间段未未找到视频文件， {}/{} {}->{}", app, stream, DateUtils.getDateTimeStr(startTime), DateUtils.getDateTimeStr(endTime));
             return null;
         }
         String taskId = DigestUtils.md5DigestAsHex(String.valueOf(System.currentTimeMillis()).getBytes());
         logger.info("[录像合并] 开始合并，APP:{}, STREAM: {}, 任务ID：{}", app, stream, taskId);
         String destDir = "recordTemp" + File.separator + taskId + File.separator + app;
-        File recordFile = new File(new File(userSettings.getRecord()).getParentFile().getAbsolutePath()  + File.separator + destDir );
+        File recordFile = new File(userSettings.getRecord() + destDir );
         if (!recordFile.exists()) {
             recordFile.mkdirs();
         }
@@ -374,7 +369,7 @@ public class VideoFileService {
             mergeOrCutTaskInfo.setPercentage("1");
             // 处理文件路径
             String recordFileResultPath = recordFile.getAbsolutePath() + File.separator + stream + ".mp4";
-            Path relativize = Paths.get(userSettings.getRecord()).getParent().relativize(Paths.get(recordFileResultPath));
+            Path relativize = Paths.get(userSettings.getRecord()).relativize(Paths.get(recordFileResultPath));
             try {
                 Files.copy(filesInTime.get(0).toPath(), Paths.get(recordFileResultPath));
             } catch (IOException e) {
@@ -384,8 +379,8 @@ public class VideoFileService {
             }
             mergeOrCutTaskInfo.setRecordFile(relativize.toString());
             if (remoteHost != null) {
-                mergeOrCutTaskInfo.setDownloadFile(remoteHost + "/download.html?url=" + relativize);
-                mergeOrCutTaskInfo.setPlayFile(remoteHost + "/" + relativize);
+                mergeOrCutTaskInfo.setDownloadFile(remoteHost + "/download.html?url=download/" + relativize);
+                mergeOrCutTaskInfo.setPlayFile(remoteHost + "/download/" + relativize);
             }
             String key = String.format("%S_%S_%S_%S_%S", AssistConstants.MERGEORCUT , userSettings.getId(), mergeOrCutTaskInfo.getApp(), mergeOrCutTaskInfo.getStream(), mergeOrCutTaskInfo.getId());
             redisUtil.set(key, mergeOrCutTaskInfo);
@@ -397,7 +392,7 @@ public class VideoFileService {
                     mergeOrCutTaskInfo.setPercentage("1");
 
                     // 处理文件路径
-                    Path relativize = Paths.get(userSettings.getRecord()).getParent().relativize(Paths.get(result));
+                    Path relativize = Paths.get(userSettings.getRecord()).relativize(Paths.get(result));
                     mergeOrCutTaskInfo.setRecordFile(relativize.toString());
                     if (remoteHost != null) {
                         mergeOrCutTaskInfo.setDownloadFile(remoteHost + "/download.html?url=" + relativize);

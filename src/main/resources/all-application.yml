@@ -12,7 +12,7 @@ spring:
         # [可选] 超时时间
         timeout: 10000
 
-# [可选] WVP监听的HTTP端口, 网页和接口调用都是这个端口
+# [必选] WVP监听的HTTP端口, 网页和接口调用都是这个端口
 server:
     port: 18081
     # [可选] HTTPS配置， 默认不开启
@@ -27,10 +27,10 @@ server:
         key-store-type: JKS
 
 # [根据业务需求配置]
-userSettings:
-    # [可选 ] zlm配置的录像路径，
+user-settings:
+    # [可选 ] zlm配置的录像路径，不配置则使用当前目录下的record目录 即： ./record
     record: /media/lin/Server/ZLMediaKit/dev/ZLMediaKit/release/linux/Debug/www/record
-    # [可选 ] 录像保存时长（单位： 天）每天晚12点自动对过期文件执行清理
+    # [可选 ] 录像保存时长（单位： 天）每天晚12点自动对过期文件执行清理, 不配置则不删除
     recordDay: 7
     # [可选 ] 录像下载合成临时文件保存时长， 不配置默认取值recordDay（单位： 天）每天晚12点自动对过期文件执行清理
     # recordTempDay: 7
