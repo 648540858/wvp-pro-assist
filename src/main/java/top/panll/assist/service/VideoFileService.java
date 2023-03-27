@@ -334,7 +334,9 @@ public class VideoFileService {
     public String mergeOrCut(String app, String stream, Date startTime, Date endTime, String remoteHost) {
         List<File> filesInTime = this.getFilesInTime(app, stream, startTime, endTime);
         if (filesInTime== null || filesInTime.size() == 0){
-            logger.info("此时间段未未找到视频文件， {}/{} {}->{}", app, stream, DateUtils.getDateTimeStr(startTime), DateUtils.getDateTimeStr(endTime));
+            logger.info("此时间段未未找到视频文件， {}/{} {}->{}", app, stream,
+                    startTime == null? null:DateUtils.getDateTimeStr(startTime),
+                    endTime == null? null:DateUtils.getDateTimeStr(endTime));
             return null;
         }
         String taskId = DigestUtils.md5DigestAsHex(String.valueOf(System.currentTimeMillis()).getBytes());
