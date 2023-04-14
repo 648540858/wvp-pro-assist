@@ -379,7 +379,7 @@ public class VideoFileService {
                 logger.info("[录像合并] 失败，APP:{}, STREAM: {}, 任务ID：{}", app, stream, taskId);
                 return taskId;
             }
-            mergeOrCutTaskInfo.setRecordFile(relativize.toString());
+            mergeOrCutTaskInfo.setRecordFile("/download/" + relativize.toString());
             if (remoteHost != null) {
                 mergeOrCutTaskInfo.setDownloadFile(remoteHost + "/download.html?url=download/" + relativize);
                 mergeOrCutTaskInfo.setPlayFile(remoteHost + "/download/" + relativize);
@@ -397,8 +397,8 @@ public class VideoFileService {
                     Path relativize = Paths.get(userSettings.getRecord()).relativize(Paths.get(result));
                     mergeOrCutTaskInfo.setRecordFile(relativize.toString());
                     if (remoteHost != null) {
-                        mergeOrCutTaskInfo.setDownloadFile(remoteHost + "/download.html?url=" + relativize);
-                        mergeOrCutTaskInfo.setPlayFile(remoteHost + "/" + relativize);
+                        mergeOrCutTaskInfo.setDownloadFile(remoteHost + "/download.html?url=download/" + relativize);
+                        mergeOrCutTaskInfo.setPlayFile(remoteHost + "/download/" + relativize);
                     }
                     logger.info("[录像合并] 合并完成，APP:{}, STREAM: {}, 任务ID：{}", app, stream, taskId);
                 }else {

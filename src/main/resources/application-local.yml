@@ -35,20 +35,18 @@ server:
 userSettings:
     # [必选 ] 服务ID
     id: 334533
-    # [必选 ] zlm配置的录像路径
-    record: /home/lin/server/test001/default/www/record/
+    # [必选 ] 录像路径
+    record: /home/lin/record/
     # [可选 ] 录像保存时长（单位： 天）每天晚12点自动对过期文件执行清理
-    recordDay: 7
+    recordDay: 10
     # [可选 ] 录像下载合成临时文件保存时长， 不配置默认取值recordDay（单位： 天）每天晚12点自动对过期文件执行清理
     # recordTempDay: 7
     # [必选 ] ffmpeg路径
     ffmpeg: /home/lin/IdeaProjects/wvp-pro-assist/lib/ffmpeg
-    # [必选 ] ffprobe路径， 一般安装ffmpeg就会自带， 一般跟ffmpeg在同一目录,用于查询文件的信息
+    # [必选 ] ffprobe路径， 一般安装ffmpeg就会自带， 一般跟ffmpeg在同一目录,用于查询文件的信息，
     ffprobe: /home/lin/IdeaProjects/wvp-pro-assist/lib/ffprobe
     # [可选 ] 限制 ffmpeg 合并文件使用的线程数，间接限制cpu使用率， 默认2 限制到50%
     threads: 2
-
-swagger-ui:
 
 # [可选] 日志配置, 一般不需要改
 logging:
