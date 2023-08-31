@@ -22,10 +22,10 @@ public class VideoFileFactory {
         if (!file.isFile()){
             return null;
         }
-        if (file.getName().startsWith(".")){
+        if (!file.getName().endsWith(".mp4")){
             return null;
         }
-        if (!file.getName().endsWith(".mp4")){
+        if (file.isHidden()){
             return null;
         }
         String date = file.getParentFile().getName();

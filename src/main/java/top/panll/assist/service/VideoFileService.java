@@ -260,7 +260,6 @@ public class VideoFileService {
                                     || videoFile.getEndTime().equals(endTime)
                                     || (videoFile.getEndTime().after(endTime) && videoFile.getStartTime().before(endTime));
                         }
-
                     }
                 });
                 if (files != null && files.length > 0) {
