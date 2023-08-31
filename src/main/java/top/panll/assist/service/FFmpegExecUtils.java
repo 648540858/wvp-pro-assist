@@ -17,6 +17,7 @@ import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Component;
 import org.springframework.util.DigestUtils;
 import top.panll.assist.dto.UserSettings;
+import top.panll.assist.dto.VideoFile;
 import top.panll.assist.utils.RedisUtil;
 
 import java.io.BufferedWriter;
@@ -93,13 +94,13 @@ public class FFmpegExecUtils implements InitializingBean{
         try {
             BufferedWriter bw =new BufferedWriter(new FileWriter(fileListName));
             for (File file : fils) {
-                String[] split = file.getName().split("-");
-                if (split.length != 3) continue;
-                String durationStr = split[2].replace(".mp4", "");
-                Double duration = Double.parseDouble(durationStr)/1000;
+                VideoFile videoFile = VideoFileFactory.createFile(this, file);
+                if (videoFile == null || !videoFile.isTargetFormat()) {
+                    return;
+                }
                 bw.write("file " + file.getAbsolutePath());
                 bw.newLine();
-                durationAll += duration;
+                durationAll += videoFile.getDuration();
             }
             bw.flush();
             bw.close();
@@ -127,16 +128,16 @@ public class FFmpegExecUtils implements InitializingBean{
             final double duration_ns = finalDurationAll * TimeUnit.SECONDS.toNanos(1);
             double percentage = progress.out_time_ns / duration_ns;
 
-            // Print out interesting information about the progress
-//            System.out.println(String.format(
-//                    "[%.0f%%] status:%s frame:%d time:%s ms fps:%.0f speed:%.2fx",
-//                    percentage * 100,
-//                    progress.status,
-//                    progress.frame,
-//                    FFmpegUtils.toTimecode(progress.out_time_ns, TimeUnit.NANOSECONDS),
-//                    progress.fps.doubleValue(),
-//                    progress.speed
-//            ));
+//             Print out interesting information about the progress
+            System.out.println(String.format(
+                    "[%.0f%%] status:%s frame:%d time:%s ms fps:%.0f speed:%.2fx",
+                    percentage * 100,
+                    progress.status,
+                    progress.frame,
+                    FFmpegUtils.toTimecode(progress.out_time_ns, TimeUnit.NANOSECONDS),
+                    progress.fps.doubleValue(),
+                    progress.speed
+            ));
 
             if (progress.status.equals(Progress.Status.END)){
                 callBack.run(progress.status.name(), percentage, recordFileResultPath);

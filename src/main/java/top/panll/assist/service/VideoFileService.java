@@ -68,35 +68,6 @@ public class VideoFileService {
         return spaceInfo;
     }
 
-//    public String getPrintSize(long size) {
-//        // 如果字节数少于1024，则直接以B为单位，否则先除于1024，后3位因太少无意义
-//        if (size < 1024) {
-//            return String.valueOf(size) + "B";
-//        } else {
-//            size = size / 1024;
-//        }
-//        // 如果原字节数除于1024之后，少于1024，则可以直接以KB作为单位
-//        // 因为还没有到达要使用另一个单位的时候
-//        // 接下去以此类推
-//        if (size < 1024) {
-//            return String.valueOf(size) + "KB";
-//        } else {
-//            size = size / 1024;
-//        }
-//        if (size < 1024) {
-//            // 因为如果以MB为单位的话，要保留最后1位小数，
-//            // 因此，把此数乘以100之后再取余
-//            size = size * 100;
-//            return String.valueOf((size / 100)) + "."
-//                    + String.valueOf((size % 100)) + "MB";
-//        } else {
-//            // 否则如果要以GB为单位的，先除于1024再作同样的处理
-//            size = size * 100 / 1024;
-//            return String.valueOf((size / 100)) + "."
-//                    + String.valueOf((size % 100)) + "GB";
-//        }
-//    }
-
     public List<File> getStreamList(String app, Boolean sort) {
         File appFile = new File(userSettings.getRecord() + File.separator + app);
         return getStreamList(appFile, sort);
@@ -119,47 +90,32 @@ public class VideoFileService {
     }
 
     /**
-     * 对视频文件重命名， 00：00：00-00：00：00
-     * @param file
-     * @throws ParseException
+     * 对视频文件重命名
      */
     public void handFile(File file,String app, String stream) {
-        FFprobe ffprobe = ffmpegExecUtils.getFfprobe();
-        if(file.exists() && file.isFile() && !file.getName().startsWith(".")&& file.getName().endsWith(".mp4") && file.getName().indexOf(":") < 0) {
-            try {
+        VideoFile videoFile = VideoFileFactory.createFile(ffmpegExecUtils, file);
+        if (videoFile == null || videoFile.isTargetFormat()) {
+            return;
+        }
 
-                FFmpegProbeResult in = ffprobe.probe(file.getAbsolutePath());
-                double duration = in.getFormat().duration * 1000;
-                String endTimeStr = file.getName().replace(".mp4", "");
+        SimpleDateFormat dateFormat = new SimpleDateFormat("HHmmss");
 
-                SimpleDateFormat formatter = new SimpleDateFormat("yyyy-MM-dd HH-mm-ss");
-                SimpleDateFormat simpleDateFormat = new SimpleDateFormat("HH:mm:ss");
+        String key = AssistConstants.STREAM_CALL_INFO + userSettings.getId() + "_" + app + "_" + stream;
+        String callId = (String) redisUtil.get(key);
 
-                File dateFile = new File(file.getParent());
+        String streamNew = (callId == null? stream : stream + "_" + callId);
+        File newPath = new File(userSettings.getRecord() + File.separator +  app + File.separator + streamNew
+                + File.separator + DateUtils.getDateStr(videoFile.getStartTime()));
+        if (!newPath.exists()) {
+            newPath.mkdirs();
+        }
 
-                long startTime = formatter.parse(dateFile.getName() + " " + endTimeStr).getTime();
-                long durationLong = new Double(duration).longValue();
-                long endTime = startTime + durationLong;
-                endTime = endTime - endTime%1000;
-
-                String key = AssistConstants.STREAM_CALL_INFO + userSettings.getId() + "_" + app + "_" + stream;
-                String callId = (String) redisUtil.get(key);
-
-                String streamNew = (callId == null? stream : stream + "_" + callId);
-                File newPath = new File(userSettings.getRecord() + File.separator +  app + File.separator + streamNew + File.separator + DateUtils.getDateStr(new Date(startTime)));
-                if (!newPath.exists()) {
-                    newPath.mkdirs();
-                }
-
-                String newName = newPath.getAbsolutePath() + File.separator+  simpleDateFormat.format(startTime) + "-" + simpleDateFormat.format(endTime) + "-" + durationLong + ".mp4";
-                file.renameTo(new File(newName));
-                System.out.println(file.getAbsolutePath());
-                logger.info("[处理文件] {}", file.getName());
-            } catch (IOException e) {
-                logger.warn("文件可能以损坏[{}]", file.getAbsolutePath());
-            } catch (ParseException e) {
-                logger.error("时间格式化失败", e.getMessage());
-            }
+        String newName = newPath.getAbsolutePath() + File.separator+  dateFormat.format(videoFile.getStartTime())
+                + "-" + dateFormat.format(videoFile.getEndTime()) + ".mp4";
+        logger.info("[处理文件] {}->{}", file.getAbsolutePath(), newName);
+        boolean renameTo = file.renameTo(new File(newName));
+        if (!renameTo) {
+            logger.info("[处理文件]文件重命名失败 {}->{}", file.getAbsolutePath(), newName);
         }
     }
 
@@ -199,7 +155,7 @@ public class VideoFileService {
                 time1 = simpleDateFormatForTime.parse(f1.get("time").toString());
                 time2 = simpleDateFormatForTime.parse(f2.get("time").toString());
             } catch (ParseException e) {
-                logger.error("时间格式化失败", e.getMessage());
+                logger.error("时间格式化失败", e);
             }
             return time1.compareTo(time2) * -1;
         });
@@ -221,7 +177,7 @@ public class VideoFileService {
             return result;
         }
 
-        SimpleDateFormat formatter = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
+        SimpleDateFormat formatter = new SimpleDateFormat("yyyy-MM-dd HHmmss");
         SimpleDateFormat formatterForDate = new SimpleDateFormat("yyyy-MM-dd");
         String startTimeStr = null;
         String endTimeStr = null;
@@ -277,54 +233,50 @@ public class VideoFileService {
 
         if (dateFiles != null && dateFiles.length > 0) {
             for (File dateFile : dateFiles) {
-                // TODO 按时间获取文件
                 File[] files = dateFile.listFiles((File dir, String name) ->{
-                    boolean filterResult = true;
                     File currentFile = new File(dir + File.separator + name);
-                    if (currentFile.isFile()  && name.contains(":") && name.endsWith(".mp4") && !name.startsWith(".") && currentFile.length() > 0){
-                        String[] timeArray = name.split("-");
-                        if (timeArray.length == 3){
-                            String fileStartTimeStr = dateFile.getName() + " " + timeArray[0];
-                            String fileEndTimeStr = dateFile.getName() + " " + timeArray[1];
-                            try {
-                                if (startTime != null) {
-                                    filterResult = filterResult &&  (formatter.parse(fileStartTimeStr).after(startTime) || (formatter.parse(fileStartTimeStr).before(startTime) && formatter.parse(fileEndTimeStr).after(startTime)));
-                                }
-                                if (endTime != null) {
-                                    filterResult = filterResult &&  (formatter.parse(fileEndTimeStr).before(endTime) || (formatter.parse(fileEndTimeStr).after(endTime) && formatter.parse(fileStartTimeStr).before(endTime)));
-                                }
-                            } catch (ParseException e) {
-                                logger.error("过滤视频文件时异常： {}-{}", name, e.getMessage());
-                                return false;
-                            }
-                        }
+                    VideoFile videoFile = VideoFileFactory.createFile(ffmpegExecUtils, currentFile);
+                    if (videoFile == null ) {
+                        return false;
                     }else {
-                        filterResult = false;
-                    }
-                    return filterResult;
-                });
+                        if (!videoFile.isTargetFormat()) {
+                            return false;
+                        }
+                        if (startTime == null && endTime == null) {
+                           return true;
+                        }else if (startTime == null && endTime != null) {
+                            return videoFile.getEndTime().before(endTime)
+                                    || videoFile.getEndTime().equals(endTime)
+                                    || (videoFile.getEndTime().after(endTime) && videoFile.getStartTime().before(endTime));
+                        }else if (startTime != null && endTime == null) {
+                            return videoFile.getStartTime().after(startTime)
+                                    || videoFile.getStartTime().equals(startTime)
+                                    || (videoFile.getStartTime().before(startTime) && videoFile.getEndTime().after(startTime));
+                        }else {
+                            return videoFile.getStartTime().after(startTime)
+                                    || videoFile.getStartTime().equals(startTime)
+                                    || (videoFile.getStartTime().before(startTime) && videoFile.getEndTime().after(startTime))
+                                    || videoFile.getEndTime().before(endTime)
+                                    || videoFile.getEndTime().equals(endTime)
+                                    || (videoFile.getEndTime().after(endTime) && videoFile.getStartTime().before(endTime));
+                        }
 
-                List<File> fileList = Arrays.asList(files);
-                result.addAll(fileList);
+                    }
+                });
+                if (files != null && files.length > 0) {
+                    result.addAll(Arrays.asList(files));
+                }
             }
         }
-        if (result.size() > 0) {
+        if (!result.isEmpty()) {
             result.sort((File f1, File f2) -> {
-                int sortResult = 0;
-                String[] timeArray1 = f1.getName().split("-");
-                String[] timeArray2 = f2.getName().split("-");
-                if (timeArray1.length == 3 && timeArray2.length == 3){
-                    File dateFile1 = f1.getParentFile();
-                    File dateFile2 = f2.getParentFile();
-                    String fileStartTimeStr1 = dateFile1.getName() + " " + timeArray1[0];
-                    String fileStartTimeStr2 = dateFile2.getName() + " " + timeArray2[0];
-                    try {
-                        sortResult = formatter.parse(fileStartTimeStr1).compareTo(formatter.parse(fileStartTimeStr2));
-                    } catch (ParseException e) {
-                        e.printStackTrace();
-                    }
+                VideoFile videoFile1 = VideoFileFactory.createFile(ffmpegExecUtils, f1);
+                VideoFile videoFile2 = VideoFileFactory.createFile(ffmpegExecUtils, f2);
+                if (videoFile1 == null || !videoFile1.isTargetFormat() || videoFile2 == null || !videoFile2.isTargetFormat()) {
+                    logger.warn("[根据时间获取视频文件] 排序错误，文件错误： {}/{}", f1.getName(), f2.getName());
+                    return 0;
                 }
-                return sortResult;
+                return videoFile1.getStartTime().compareTo(videoFile2.getStartTime());
             });
         }
         return result;
@@ -333,7 +285,7 @@ public class VideoFileService {
 
     public String mergeOrCut(String app, String stream, Date startTime, Date endTime, String remoteHost) {
         List<File> filesInTime = this.getFilesInTime(app, stream, startTime, endTime);
-        if (filesInTime== null || filesInTime.size() == 0){
+        if (filesInTime== null || filesInTime.isEmpty()){
             logger.info("此时间段未未找到视频文件， {}/{} {}->{}", app, stream,
                     startTime == null? null:DateUtils.getDateTimeStr(startTime),
                     endTime == null? null:DateUtils.getDateTimeStr(endTime));
@@ -457,6 +409,9 @@ public class VideoFileService {
             }
 
         });
+        if (dateFiles == null) {
+            return new ArrayList<>();
+        }
         List<File> dateFileList = Arrays.asList(dateFiles);
         if (sort != null && sort) {
             dateFileList.sort((File f1, File f2)->{
@@ -523,21 +478,6 @@ public class VideoFileService {
         });
 
         return result;
-    }
-
-    public boolean stopTask(String taskId) {
-//        Runnable task = taskList.get(taskId);
-//        boolean result = false;
-//        if (task != null) {
-//            processThreadPool.remove(task);
-//            taskList.remove(taskId);
-//            List<Object> taskCatch = redisUtil.scan(String.format("%S_*_*_%S", keyStr, taskId));
-//            if (taskCatch.size() == 1) {
-//                redisUtil.del((String) taskCatch.get(0));
-//                result = true;
-//            }
-//        }
-        return false;
     }
 
     public boolean collection(String app, String stream, String type) {

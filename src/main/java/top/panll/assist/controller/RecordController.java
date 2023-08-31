@@ -14,6 +14,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import top.panll.assist.controller.bean.ControllerException;
 import top.panll.assist.controller.bean.ErrorCode;
+import top.panll.assist.controller.bean.RecordFile;
 import top.panll.assist.controller.bean.WVPResult;
 import top.panll.assist.dto.*;
 import top.panll.assist.service.VideoFileService;
@@ -22,6 +23,7 @@ import top.panll.assist.utils.RedisUtil;
 
 import javax.servlet.http.HttpServletRequest;
 import java.io.File;
+import java.text.DateFormat;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.*;
@@ -160,7 +162,7 @@ public class RecordController {
      * 获取视频文件列表
      * @return
      */
-    @Operation(summary ="获取日期文件夹列表")
+    @Operation(summary ="获取视频文件列表")
     @Parameter(name = "page", description = "当前页", required = true)
     @Parameter(name = "count", description = "每页查询数量", required = true)
     @Parameter(name = "app", description = "应用名", required = true)
@@ -196,6 +198,54 @@ public class RecordController {
                 }
             }
             PageInfo<String> stringPageInfo = new PageInfo<>(recordList);
+            stringPageInfo.startPage(page, count);
+            return stringPageInfo;
+        } catch (ParseException e) {
+            logger.error("错误的开始时间[{}]或结束时间[{}]", startTime, endTime);
+            throw new ControllerException(ErrorCode.ERROR400.getCode(), "错误的开始时间或结束时间, e=" + e.getMessage());
+        }
+    }
+
+    /**
+     * 获取视频文件列表
+     * @return
+     */
+    @Operation(summary ="获取视频文件列表")
+    @Parameter(name = "page", description = "当前页", required = true)
+    @Parameter(name = "count", description = "每页查询数量", required = true)
+    @Parameter(name = "app", description = "应用名", required = true)
+    @Parameter(name = "stream", description = "流ID", required = true)
+    @Parameter(name = "startTime", description = "开始时间(yyyy-MM-dd HH:mm:ss)", required = true)
+    @Parameter(name = "endTime", description = "结束时间(yyyy-MM-dd HH:mm:ss)", required = true)
+    @GetMapping(value = "/file/listWithDate")
+    @ResponseBody
+    public PageInfo<RecordFile> getRecordListWithDate(@RequestParam int page,
+                                                      @RequestParam int count,
+                                                      @RequestParam String app,
+                                                      @RequestParam String stream,
+                                                      @RequestParam(required = false) String startTime,
+                                                      @RequestParam(required = false) String endTime
+    ){
+
+        // 开始时间与结束时间可不传或只传其一
+        List<RecordFile> recordList = new ArrayList<>();
+        try {
+            Date startTimeDate  = null;
+            Date endTimeDate  = null;
+            if (startTime != null ) {
+                startTimeDate = formatter.parse(startTime);
+            }
+            if (endTime != null ) {
+                endTimeDate = formatter.parse(endTime);
+            }
+
+            List<File> filesInTime = videoFileService.getFilesInTime(app, stream, startTimeDate, endTimeDate);
+            if (filesInTime != null && filesInTime.size() > 0) {
+                for (File file : filesInTime) {
+                    recordList.add(RecordFile.instance(app, stream, file.getName(), file.getParentFile().getName()));
+                }
+            }
+            PageInfo<RecordFile> stringPageInfo = new PageInfo<>(recordList);
             stringPageInfo.startPage(page, count);
             return stringPageInfo;
         } catch (ParseException e) {
