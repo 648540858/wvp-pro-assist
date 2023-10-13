@@ -95,7 +95,7 @@ public class FFmpegExecUtils implements InitializingBean{
             BufferedWriter bw =new BufferedWriter(new FileWriter(fileListName));
             for (File file : fils) {
                 VideoFile videoFile = VideoFileFactory.createFile(this, file);
-                if (videoFile == null || !videoFile.isTargetFormat()) {
+                if (videoFile == null) {
                     return;
                 }
                 bw.write("file " + file.getAbsolutePath());

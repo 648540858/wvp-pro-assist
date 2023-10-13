@@ -115,36 +115,38 @@ public class FileManagerTimer {
         Date lastTempDate = new Date();
         Calendar lastTempCalendar = Calendar.getInstance();
         lastTempCalendar.setTime(lastTempDate);
-        lastTempCalendar.add(Calendar.DAY_OF_MONTH, 0 - recordTempDay);
+        lastTempCalendar.add(Calendar.DAY_OF_MONTH, -recordTempDay);
         lastTempDate = lastTempCalendar.getTime();
         logger.info("[录像巡查]移除合并任务临时文件 {} 之前的文件", formatter.format(lastTempDate));
-        File recordTempFile = new File(userSettings.getRecord() +  "recordTemp");
+        File recordTempFile = new File(userSettings.getRecord());
         if (recordTempFile.exists() && recordTempFile.isDirectory() && recordTempFile.canWrite()) {
             File[] tempFiles = recordTempFile.listFiles();
-            for (File tempFile : tempFiles) {
-                if (tempFile.isDirectory() && new Date(tempFile.lastModified()).before(lastTempDate)) {
-                    boolean result = FileUtils.deleteQuietly(tempFile);
-                    if (result) {
-                        logger.info("[录像巡查]成功移除合并任务临时文件 {} ", tempFile.getAbsolutePath());
-                    }else {
-                        logger.info("[录像巡查]合并任务临时文件移除失败 {} ", tempFile.getAbsolutePath());
+            if (tempFiles != null) {
+                for (File tempFile : tempFiles) {
+                    if (tempFile.isFile() && tempFile.lastModified() < lastTempDate.getTime()) {
+                        boolean result = FileUtils.deleteQuietly(tempFile);
+                        if (result) {
+                            logger.info("[录像巡查]成功移除合并任务临时文件 {} ", tempFile.getAbsolutePath());
+                        }else {
+                            logger.info("[录像巡查]合并任务临时文件移除失败 {} ", tempFile.getAbsolutePath());
+                        }
                     }
                 }
             }
         }
         // 清理redis记录
-        String key = String.format("%S_%S_*_*_*", AssistConstants.MERGEORCUT, userSettings.getId());
+        String key = String.format("%S_%S_*", AssistConstants.MERGEORCUT, userSettings.getId());
         List<Object> taskKeys = redisUtil.scan(key);
         for (Object taskKeyObj : taskKeys) {
             String taskKey = (String) taskKeyObj;
             MergeOrCutTaskInfo mergeOrCutTaskInfo = (MergeOrCutTaskInfo)redisUtil.get(taskKey);
             try {
-                if (StringUtils.isEmpty(mergeOrCutTaskInfo.getCreateTime())
+                if (StringUtils.hasLength(mergeOrCutTaskInfo.getCreateTime())
                         || simpleDateFormatForTime.parse(mergeOrCutTaskInfo.getCreateTime()).before(lastTempDate)) {
                     redisUtil.del(taskKey);
                 }
             } catch (ParseException e) {
-                e.printStackTrace();
+                logger.error("[清理过期的redis合并任务信息] 失败", e);
             }
         }
     }
