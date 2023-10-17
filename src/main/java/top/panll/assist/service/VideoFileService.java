@@ -207,13 +207,13 @@ public class VideoFileService {
     }
 
 
-    public String mergeOrCut(List<String> filePathList, String remoteHost) {
-        assert filePathList != null;
-        assert !filePathList.isEmpty();
+    public String mergeOrCut(VideoTaskInfo videoTaskInfo) {
+        assert videoTaskInfo.getFilePathList() != null;
+        assert !videoTaskInfo.getFilePathList().isEmpty();
         String taskId = DigestUtils.md5DigestAsHex(String.valueOf(System.currentTimeMillis()).getBytes());
         logger.info("[录像合并] 开始合并， 任务ID：{}: ", taskId);
         List<File> fileList = new ArrayList<>();
-        for (String filePath : filePathList) {
+        for (String filePath : videoTaskInfo.getFilePathList()) {
             File file = new File(filePath);
             if (!file.exists()) {
                 logger.info("[录像合并] 失败， 任务ID：{}, 文件不存在: {}", taskId, filePath);
@@ -226,6 +226,11 @@ public class VideoFileService {
         File recordFile = new File(userSettings.getRecord() );
         MergeOrCutTaskInfo mergeOrCutTaskInfo = new MergeOrCutTaskInfo();
         mergeOrCutTaskInfo.setId(taskId);
+        mergeOrCutTaskInfo.setApp(videoTaskInfo.getApp());
+        mergeOrCutTaskInfo.setStream(videoTaskInfo.getStream());
+        mergeOrCutTaskInfo.setCallId(videoTaskInfo.getCallId());
+        mergeOrCutTaskInfo.setStartTime(videoTaskInfo.getStartTime());
+        mergeOrCutTaskInfo.setEndTime(videoTaskInfo.getEndTime());
         mergeOrCutTaskInfo.setCreateTime(simpleDateFormatForTime.format(System.currentTimeMillis()));
         if (fileList.size() == 1) {
 
@@ -241,9 +246,9 @@ public class VideoFileService {
                 throw new ControllerException(ErrorCode.ERROR100.getCode(), e.getMessage());
             }
             mergeOrCutTaskInfo.setRecordFile("/download/" + relativize.toString());
-            if (remoteHost != null) {
-                mergeOrCutTaskInfo.setDownloadFile(remoteHost + "/download.html?url=download/" + relativize);
-                mergeOrCutTaskInfo.setPlayFile(remoteHost + "/download/" + relativize);
+            if (videoTaskInfo.getRemoteHost() != null) {
+                mergeOrCutTaskInfo.setDownloadFile(videoTaskInfo.getRemoteHost() + "/download.html?url=download/" + relativize);
+                mergeOrCutTaskInfo.setPlayFile(videoTaskInfo.getRemoteHost() + "/download/" + relativize);
             }
             String key = String.format("%S_%S_%S", AssistConstants.MERGEORCUT , userSettings.getId(), mergeOrCutTaskInfo.getId());
             redisUtil.set(key, mergeOrCutTaskInfo);
@@ -257,9 +262,9 @@ public class VideoFileService {
                     // 处理文件路径
                     Path relativize = Paths.get(userSettings.getRecord()).relativize(Paths.get(result));
                     mergeOrCutTaskInfo.setRecordFile(relativize.toString());
-                    if (remoteHost != null) {
-                        mergeOrCutTaskInfo.setDownloadFile(remoteHost + "/download.html?url=download/" + relativize);
-                        mergeOrCutTaskInfo.setPlayFile(remoteHost + "/download/" + relativize);
+                    if (videoTaskInfo.getRemoteHost() != null) {
+                        mergeOrCutTaskInfo.setDownloadFile(videoTaskInfo.getRemoteHost() + "/download.html?url=download/" + relativize);
+                        mergeOrCutTaskInfo.setPlayFile(videoTaskInfo.getRemoteHost() + "/download/" + relativize);
                     }
                     logger.info("[录像合并] 成功， 任务ID：{}", taskId);
                 }else {

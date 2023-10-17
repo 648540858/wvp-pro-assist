@@ -266,7 +266,7 @@ public class RecordController {
         if (videoTaskInfo.getFilePathList() == null || videoTaskInfo.getFilePathList().isEmpty()) {
             throw new ControllerException(ErrorCode.ERROR100.getCode(), "视频文件列表不可为空");
         }
-        String id = videoFileService.mergeOrCut(videoTaskInfo.getFilePathList(), videoTaskInfo.getRemoteHost());
+        String id = videoFileService.mergeOrCut(videoTaskInfo);
         if (id== null) {
             throw new ControllerException(ErrorCode.ERROR100.getCode(), "可能未找到视频文件");
         }
