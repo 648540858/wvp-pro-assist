@@ -1,30 +1,17 @@
 package top.panll.assist.controller;
 
-import com.alibaba.fastjson.JSON;
-import com.alibaba.fastjson.JSONObject;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.tags.Tag;
-import org.apache.commons.io.FileUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-import top.panll.assist.controller.bean.ControllerException;
-import top.panll.assist.controller.bean.ErrorCode;
-import top.panll.assist.controller.bean.RecordFile;
-import top.panll.assist.controller.bean.WVPResult;
+import top.panll.assist.controller.bean.*;
 import top.panll.assist.dto.*;
 import top.panll.assist.service.VideoFileService;
-import top.panll.assist.utils.PageInfo;
 import top.panll.assist.utils.RedisUtil;
 
-import javax.servlet.http.HttpServletRequest;
-import java.io.File;
-import java.text.DateFormat;
-import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.*;
 
@@ -57,202 +44,6 @@ public class RecordController {
     public UserSettings getInfo(){
         return userSettings;
     }
-
-//    /**
-//     * 获取app+stream列表
-//     * @return
-//     */
-//    @Operation(summary ="分页获取app+stream的列表")
-//    @Parameter(name = "page", description = "当前页", required = true)
-//    @Parameter(name = "count", description = "每页查询数量", required = true)
-//    @GetMapping(value = "/list")
-//    @ResponseBody
-//    public PageInfo<Map<String, String>> getList(@RequestParam int page,
-//                                                 @RequestParam int count){
-//        List<Map<String, String>> appList = videoFileService.getList();
-//
-//        PageInfo<Map<String, String>> stringPageInfo = new PageInfo<>(appList);
-//        stringPageInfo.startPage(page, count);
-//        return stringPageInfo;
-//    }
-//
-//    /**
-//     * 分页获取app列表
-//     * @return
-//     */
-//    @Operation(summary ="分页获取app列表")
-//    @Parameter(name = "page", description = "当前页", required = true)
-//    @Parameter(name = "count", description = "每页查询数量", required = true)
-//    @GetMapping(value = "/app/list")
-//    @ResponseBody
-//    public PageInfo<String> getAppList(@RequestParam int page,
-//                                                  @RequestParam int count){
-//        List<String> resultData = new ArrayList<>();
-//        List<File> appList = videoFileService.getAppList(true);
-//        if (appList.size() > 0) {
-//            for (File file : appList) {
-//                resultData.add(file.getName());
-//            }
-//        }
-//        Collections.sort(resultData);
-//
-//        PageInfo<String> stringPageInfo = new PageInfo<>(resultData);
-//        stringPageInfo.startPage(page, count);
-//        return stringPageInfo;
-//    }
-//
-//    /**
-//     * 分页stream列表
-//     * @return
-//     */
-//    @Operation(summary ="分页stream列表")
-//    @Parameter(name = "page", description = "当前页", required = true)
-//    @Parameter(name = "count", description = "每页查询数量", required = true)
-//    @Parameter(name = "app", description = "应用名", required = true)
-//    @GetMapping(value = "/stream/list")
-//    @ResponseBody
-//    public PageInfo<String> getStreamList(@RequestParam int page,
-//                                                     @RequestParam int count,
-//                                                     @RequestParam String app ){
-//        List<String> resultData = new ArrayList<>();
-//        if (app == null) {
-//            throw new ControllerException(ErrorCode.ERROR400.getCode(), "app不能为空");
-//        }
-//        List<File> streamList = videoFileService.getStreamList(app, true);
-//        if (streamList != null) {
-//            for (File file : streamList) {
-//                resultData.add(file.getName());
-//            }
-//        }
-//        PageInfo<String> stringPageInfo = new PageInfo<>(resultData);
-//        stringPageInfo.startPage(page, count);
-//        return stringPageInfo;
-//    }
-//
-//    /**
-//     * 获取日期文件夹列表
-//     * @return
-//     */
-//    @Operation(summary ="获取日期文件夹列表")
-//    @Parameter(name = "year", description = "月", required = true)
-//    @Parameter(name = "month", description = "年", required = true)
-//    @Parameter(name = "app", description = "应用名", required = true)
-//    @Parameter(name = "stream", description = "流ID", required = true)
-//    @GetMapping(value = "/date/list")
-//    @ResponseBody
-//    public List<String> getDateList( @RequestParam(required = false) Integer year,
-//                                                @RequestParam(required = false) Integer month,
-//                                                 @RequestParam String app,
-//                                                 @RequestParam String stream ){
-//        List<String> resultData = new ArrayList<>();
-//        if (app == null) {
-//            throw new ControllerException(ErrorCode.ERROR400.getCode(), "app不能为空");
-//        };
-//        if (stream == null) {
-//            throw new ControllerException(ErrorCode.ERROR400.getCode(), "stream不能为空");
-//        }
-//        List<File> dateList = videoFileService.getDateList(app, stream, year, month, true);
-//        for (File file : dateList) {
-//            resultData.add(file.getName());
-//        }
-//        return resultData;
-//    }
-//
-//    /**
-//     * 获取视频文件列表
-//     * @return
-//     */
-//    @Operation(summary ="获取视频文件列表")
-//    @Parameter(name = "page", description = "当前页", required = true)
-//    @Parameter(name = "count", description = "每页查询数量", required = true)
-//    @Parameter(name = "app", description = "应用名", required = true)
-//    @Parameter(name = "stream", description = "流ID", required = true)
-//    @Parameter(name = "startTime", description = "开始时间(yyyy-MM-dd HH:mm:ss)", required = true)
-//    @Parameter(name = "endTime", description = "结束时间(yyyy-MM-dd HH:mm:ss)", required = true)
-//    @GetMapping(value = "/file/list")
-//    @ResponseBody
-//    public PageInfo<String> getRecordList(@RequestParam int page,
-//                                                     @RequestParam int count,
-//                                                     @RequestParam String app,
-//                                                     @RequestParam String stream,
-//                                                     @RequestParam(required = false) String startTime,
-//                                                     @RequestParam(required = false) String endTime
-//    ){
-//
-//        // 开始时间与结束时间可不传或只传其一
-//        List<String> recordList = new ArrayList<>();
-//        try {
-//            Date startTimeDate  = null;
-//            Date endTimeDate  = null;
-//            if (startTime != null ) {
-//                startTimeDate = formatter.parse(startTime);
-//            }
-//            if (endTime != null ) {
-//                endTimeDate = formatter.parse(endTime);
-//            }
-//
-//            List<File> filesInTime = videoFileService.getFilesInTime(app, stream, startTimeDate, endTimeDate);
-//            if (filesInTime != null && filesInTime.size() > 0) {
-//                for (File file : filesInTime) {
-//                    recordList.add(file.getName());
-//                }
-//            }
-//            PageInfo<String> stringPageInfo = new PageInfo<>(recordList);
-//            stringPageInfo.startPage(page, count);
-//            return stringPageInfo;
-//        } catch (ParseException e) {
-//            logger.error("错误的开始时间[{}]或结束时间[{}]", startTime, endTime);
-//            throw new ControllerException(ErrorCode.ERROR400.getCode(), "错误的开始时间或结束时间, e=" + e.getMessage());
-//        }
-//    }
-//
-//    /**
-//     * 获取视频文件列表
-//     * @return
-//     */
-//    @Operation(summary ="获取视频文件列表")
-//    @Parameter(name = "page", description = "当前页", required = true)
-//    @Parameter(name = "count", description = "每页查询数量", required = true)
-//    @Parameter(name = "app", description = "应用名", required = true)
-//    @Parameter(name = "stream", description = "流ID", required = true)
-//    @Parameter(name = "startTime", description = "开始时间(yyyy-MM-dd HH:mm:ss)", required = true)
-//    @Parameter(name = "endTime", description = "结束时间(yyyy-MM-dd HH:mm:ss)", required = true)
-//    @GetMapping(value = "/file/listWithDate")
-//    @ResponseBody
-//    public PageInfo<RecordFile> getRecordListWithDate(@RequestParam int page,
-//                                                      @RequestParam int count,
-//                                                      @RequestParam String app,
-//                                                      @RequestParam String stream,
-//                                                      @RequestParam(required = false) String startTime,
-//                                                      @RequestParam(required = false) String endTime
-//    ){
-//
-//        // 开始时间与结束时间可不传或只传其一
-//        List<RecordFile> recordList = new ArrayList<>();
-//        try {
-//            Date startTimeDate  = null;
-//            Date endTimeDate  = null;
-//            if (startTime != null ) {
-//                startTimeDate = formatter.parse(startTime);
-//            }
-//            if (endTime != null ) {
-//                endTimeDate = formatter.parse(endTime);
-//            }
-//
-//            List<File> filesInTime = videoFileService.getFilesInTime(app, stream, startTimeDate, endTimeDate);
-//            if (filesInTime != null && filesInTime.size() > 0) {
-//                for (File file : filesInTime) {
-//                    recordList.add(RecordFile.instance(app, stream, file.getName(), file.getParentFile().getName()));
-//                }
-//            }
-//            PageInfo<RecordFile> stringPageInfo = new PageInfo<>(recordList);
-//            stringPageInfo.startPage(page, count);
-//            return stringPageInfo;
-//        } catch (ParseException e) {
-//            logger.error("错误的开始时间[{}]或结束时间[{}]", startTime, endTime);
-//            throw new ControllerException(ErrorCode.ERROR400.getCode(), "错误的开始时间或结束时间, e=" + e.getMessage());
-//        }
-//    }
 
 
     /**
@@ -289,64 +80,6 @@ public class RecordController {
             throw new ControllerException(ErrorCode.ERROR100);
         }
         return taskList;
-    }
-
-    /**
-     * 收藏录像（被收藏的录像不会被清理任务清理）
-     */
-    @Operation(summary ="收藏录像（被收藏的录像不会被清理任务清理）")
-    @Parameter(name = "type", description = "类型", required = true)
-    @Parameter(name = "app", description = "应用名", required = true)
-    @Parameter(name = "stream", description = "流ID", required = true)
-    @GetMapping(value = "/file/collection/add")
-    @ResponseBody
-    public void collection(
-            @RequestParam(required = true) String type,
-            @RequestParam(required = true) String app,
-            @RequestParam(required = true) String stream){
-
-        boolean collectionResult = videoFileService.collection(app, stream, type);
-        if (!collectionResult) {
-            throw new ControllerException(ErrorCode.ERROR100);
-        }
-    }
-
-    /**
-     * 移除收藏录像
-     */
-    @Operation(summary ="移除收藏录像")
-    @Parameter(name = "type", description = "类型", required = true)
-    @Parameter(name = "app", description = "应用名", required = true)
-    @Parameter(name = "stream", description = "流ID", required = true)
-    @GetMapping(value = "/file/collection/remove")
-    @ResponseBody
-    public void removeCollection(
-            @RequestParam(required = true) String type,
-            @RequestParam(required = true) String app,
-            @RequestParam(required = true) String stream){
-
-        boolean collectionResult = videoFileService.removeCollection(app, stream, type);
-        if (!collectionResult) {
-            throw new ControllerException(ErrorCode.ERROR100);
-        }
-    }
-
-    /**
-     * 收藏录像列表
-     */
-    @Operation(summary ="收藏录像列表")
-    @Parameter(name = "type", description = "类型", required = false)
-    @Parameter(name = "app", description = "应用名", required = false)
-    @Parameter(name = "stream", description = "流ID", required = false)
-    @GetMapping(value = "/file/collection/list")
-    @ResponseBody
-    public List<SignInfo> collectionList(
-            @RequestParam(required = false) String type,
-            @RequestParam(required = false) String app,
-            @RequestParam(required = false) String stream){
-
-        List<SignInfo> signInfos = videoFileService.getCollectionList(app, stream, type);
-        return signInfos;
     }
 
     /**
@@ -390,5 +123,16 @@ public class RecordController {
     @PostMapping(value = "/file/duration", produces = "application/json;charset=UTF-8")
     public long fileDuration( @RequestParam String app, @RequestParam String stream) {
         return videoFileService.fileDuration(app, stream);
+    }
+
+    /**
+     * 删除文件
+     */
+    @Operation(summary ="删除文件")
+    @Parameter(name = "fileLIstInfo", description = "FileLIstInfo", required = true)
+    @ResponseBody
+    @PostMapping(value = "/file/delete", produces = "application/json;charset=UTF-8")
+    public int fileDuration( @RequestBody FileLIstInfo fileLIstInfo) {
+        return videoFileService.deleteFile(fileLIstInfo.getFilePathList());
     }
 }

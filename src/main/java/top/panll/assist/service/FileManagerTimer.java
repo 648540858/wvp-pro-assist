@@ -42,74 +42,7 @@ public class FileManagerTimer {
         if (userSettings.getRecord() == null) {
             return;
         }
-        int recordDay = userSettings.getRecordDay();
-        Date lastDate=new Date();
-        Calendar lastCalendar = Calendar.getInstance();
-        if (recordDay > 0) {
-            lastCalendar.setTime(lastDate);
-            lastCalendar.add(Calendar.DAY_OF_MONTH, 0 - recordDay);
-            lastDate = lastCalendar.getTime();
-        }
 
-        logger.info("[录像巡查]移除 {} 之前的文件", formatter.format(lastDate));
-        File recordFileDir = new File(userSettings.getRecord());
-        if (recordFileDir.canWrite()) {
-            List<File> appList = videoFileService.getAppList(false);
-            if (appList != null && appList.size() > 0) {
-                for (File appFile : appList) {
-                    if ("download.html".equals(appFile.getName())) {
-                        continue;
-                    }
-                    List<File> streamList = videoFileService.getStreamList(appFile, false);
-                    if (streamList != null && streamList.size() > 0) {
-                        for (File streamFile : streamList) {
-                            // 带有sig标记文件的为收藏文件，不被自动清理任务移除
-                            File[] signFiles = streamFile.listFiles((File dir, String name) -> {
-                                File currentFile = new File(dir.getAbsolutePath() + File.separator + name);
-                                return currentFile.isFile() && name.endsWith(".sign");
-                            });
-                            if (signFiles != null && signFiles.length > 0) {
-                                continue;
-                            }
-                            List<File> dateList = videoFileService.getDateList(streamFile, null, null, false);
-                            if (dateList != null && dateList.size() > 0) {
-                                for (File dateFile : dateList) {
-                                    try {
-                                        Date parse = formatter.parse(dateFile.getName());
-                                        if (parse.before(lastDate)) {
-                                            boolean result = FileUtils.deleteQuietly(dateFile);
-                                            if (result) {
-                                                logger.info("[录像巡查]成功移除 {} ", dateFile.getAbsolutePath());
-                                            }else {
-                                                logger.info("[录像巡查]移除失败 {} ", dateFile.getAbsolutePath());
-                                            }
-                                        }
-                                    } catch (ParseException e) {
-                                        e.printStackTrace();
-                                    }
-                                }
-                            }
-                            if (streamFile.listFiles() == null || streamFile.listFiles().length == 0) {
-                                boolean result = FileUtils.deleteQuietly(streamFile);
-                                if (result) {
-                                    logger.info("[录像巡查]成功移除 {} ", streamFile.getAbsolutePath());
-                                }else {
-                                    logger.info("[录像巡查]移除失败 {} ", streamFile.getAbsolutePath());
-                                }
-                            }
-                        }
-                    }
-                    if (appFile.listFiles() == null || appFile.listFiles().length == 0) {
-                        boolean result = FileUtils.deleteQuietly(appFile);
-                        if (result) {
-                            logger.info("[录像巡查]成功移除 {} ", appFile.getAbsolutePath());
-                        }else {
-                            logger.info("[录像巡查]移除失败 {} ", appFile.getAbsolutePath());
-                        }
-                    }
-                }
-            }
-        }
         // 清理任务临时文件
         int recordTempDay = userSettings.getRecordTempDay();
         Date lastTempDate = new Date();

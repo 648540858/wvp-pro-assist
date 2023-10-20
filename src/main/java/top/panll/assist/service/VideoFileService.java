@@ -461,4 +461,24 @@ public class VideoFileService {
         }
         return durationResult;
     }
+
+    public int deleteFile(List<String> filePathList) {
+        assert filePathList != null;
+        assert filePathList.isEmpty();
+        int deleteResult = 0;
+        for (String filePath : filePathList) {
+            File file = new File(filePath);
+            if (file.exists()) {
+                if (file.delete()) {
+                    deleteResult ++;
+                }
+            }else {
+                logger.warn("[删除文件] 文件不存在，{}", filePath);
+            }
+        }
+        if (deleteResult == 0) {
+            throw new ControllerException(ErrorCode.ERROR100.getCode(), "未删除任何文件");
+        }
+        return deleteResult;
+    }
 }
