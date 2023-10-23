@@ -17,7 +17,7 @@ user-settings:
   id: 1111
   media-server-id: 11212
   # [可选 ] zlm配置的录像路径，不配置则使用当前目录下的record目录 即： ./record
-  record: /home/lin/record/
+  record: /home/lin/record1/
   # [可选 ] 录像保存时长（单位： 天）每天晚12点自动对过期文件执行清理, 不配置则不删除
   recordDay: 7
   # [可选 ] 录像下载合成临时文件保存时长， 不配置默认取值recordDay（单位： 天）每天晚12点自动对过期文件执行清理

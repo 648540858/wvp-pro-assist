@@ -68,13 +68,14 @@ public class StartConfig implements CommandLineRunner {
         }
         List<CloudRecordItem> cloudRecordItemList = new ArrayList<>();
         Map<String, String> renameMap = new HashMap<>();
+        List<String> streamFileList = new ArrayList<>();
         // 搜集数据
-        for (File file : appFiles) {
-            if (!file.isDirectory()) {
+        for (File appFile : appFiles) {
+            if (!appFile.isDirectory()) {
                 continue;
             }
-            String app = file.getName();
-            File[] streamFiles = file.listFiles();
+            String app = appFile.getName();
+            File[] streamFiles = appFile.listFiles();
             if (streamFiles == null || streamFiles.length == 0) {
                 continue;
             }
@@ -95,6 +96,7 @@ public class StartConfig implements CommandLineRunner {
                         if (dateFiles == null || dateFiles.length == 0) {
                             continue;
                         }
+                        streamFileList.add(streamFile.getAbsolutePath());
                         // TODC 确定关联和归档分别使用了什么类型名称
                         boolean collect = false;
                         boolean reserve = false;
@@ -151,7 +153,7 @@ public class StartConfig implements CommandLineRunner {
                                     cloudRecordItem.setFolder(streamFile.getAbsolutePath());
                                     cloudRecordItem.setFileSize(videoFile.length());
                                     cloudRecordItem.setTimeLen(timeLength);
-                                    cloudRecordItem.setFilePath(videoFile.getParentFile().getAbsolutePath() + File.separator + cloudRecordItem.getFileName());
+                                    cloudRecordItem.setFilePath(appFile.getAbsolutePath() + File.separator +  stream + File.separator + dateFile.getName() + File.separator + cloudRecordItem.getFileName());
                                     cloudRecordItemList.add(cloudRecordItem);
                                     renameMap.put(videoFile.getAbsolutePath(), cloudRecordItem.getFilePath());
                                     System.out.println(cloudRecordItem.getFilePath());
@@ -174,15 +176,36 @@ public class StartConfig implements CommandLineRunner {
                         }
                         int length = cloudRecordServiceMapper.batchAdd(cloudRecordItemList.subList(i, toIndex));
                         if (length == 0) {
+                            logger.info("数据写入数据库失败");
                             dataSourceTransactionManager.rollback(transactionStatus);
+                            System.exit(1);
                         }
                     }
                 } else {
-                    cloudRecordServiceMapper.batchAdd(cloudRecordItemList);
+                    int length = cloudRecordServiceMapper.batchAdd(cloudRecordItemList);
+                    if (length == 0) {
+                        logger.info("数据写入数据库失败");
+                        dataSourceTransactionManager.rollback(transactionStatus);
+                        System.exit(1);
+                    }
                 }
                 dataSourceTransactionManager.commit(transactionStatus);
             }
             logger.info("数据写入数据库完成");
+            logger.info("开始修改磁盘文件");
+            for (String oldFileName : renameMap.keySet()) {
+                File oldFile = new File(oldFileName);
+                boolean result = oldFile.renameTo(new File(renameMap.get(oldFileName)));
+                if (result) {
+                    logger.info("重命名成功： " + oldFileName + "===" + renameMap.get(oldFileName));
+                }
+            }
+            logger.info("修改磁盘文件完成");
+            logger.info("清理失效文件夹");
+            for (String streamFileStr : streamFileList) {
+                new File(streamFileStr).delete();
+            }
+            logger.info("清理失效文件夹结束");
         }
 
 
