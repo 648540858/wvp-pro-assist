@@ -1,3 +1,44 @@
 spring:
-  profiles:
-    active: local
+  application:
+    name: wvp-assist
+  datasource:
+    type: com.zaxxer.hikari.HikariDataSource
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    url: jdbc:mysql://127.0.0.1:3306/wvp_test?useUnicode=true&characterEncoding=UTF8&rewriteBatchedStatements=true&serverTimezone=PRC&useSSL=false&allowMultiQueries=true&allowPublicKeyRetrieval=true
+    username: root
+    password: 12345678
+
+# [必选] WVP监听的HTTP端口, 网页和接口调用都是这个端口
+server:
+  port: 18081
+
+# [根据业务需求配置]
+user-settings:
+  id: 1111
+  media-server-id: 11212
+  # [可选 ] zlm配置的录像路径，不配置则使用当前目录下的record目录 即： ./record
+  record: /home/lin/record/
+  # [可选 ] 录像保存时长（单位： 天）每天晚12点自动对过期文件执行清理, 不配置则不删除
+  recordDay: 7
+  # [可选 ] 录像下载合成临时文件保存时长， 不配置默认取值recordDay（单位： 天）每天晚12点自动对过期文件执行清理
+  # recordTempDay: 7
+  # [必选 ] ffmpeg路径
+  ffmpeg: /usr/bin/ffmpeg
+  # [必选 ] ffprobe路径， 一般安装ffmpeg就会自带， 一般跟ffmpeg在同一目录,用于查询文件的信息
+  ffprobe: /usr/bin/ffprobe
+  # [可选 ] 限制 ffmpeg 合并文件使用的线程数，间接限制cpu使用率， 默认2 限制到50%
+  threads: 2
+
+
+# [可选] 日志配置, 一般不需要改
+logging:
+  file:
+    name: logs/wvp.log
+    max-history: 30
+    max-size: 10MB
+    total-size-cap: 300MB
+  level:
+    root: WARN
+    top:
+      panll:
+        assist: info

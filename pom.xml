@@ -44,6 +44,49 @@
         </dependency>
 
         <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-jdbc</artifactId>
+        </dependency>
+
+        <!-- mysql数据库 -->
+        <dependency>
+            <groupId>mysql</groupId>
+            <artifactId>mysql-connector-java</artifactId>
+            <version>8.0.30</version>
+        </dependency>
+
+        <!--postgresql-->
+        <dependency>
+            <groupId>org.postgresql</groupId>
+            <artifactId>postgresql</artifactId>
+            <version>42.5.1</version>
+        </dependency>
+
+        <!-- kingbase人大金仓 -->
+        <!-- 手动下载驱动后安装 -->
+        <!-- mvn install:install-file -Dfile=/home/lin/soft/kingbase/jdbc-aarch/kingbase8-8.6.0.jar -DgroupId=com.kingbase -DartifactId=kingbase8 -Dversion=8.6.0 -Dpackaging=jar
+ -->
+        <dependency>
+            <groupId>com.kingbase</groupId>
+            <artifactId>kingbase8</artifactId>
+            <version>8.6.0</version>
+            <scope>system</scope>
+            <systemPath>${basedir}/libs/jdbc-aarch/kingbase8-8.6.0.jar</systemPath>
+        </dependency>
+
+        <dependency>
+            <groupId>org.mybatis.spring.boot</groupId>
+            <artifactId>mybatis-spring-boot-starter</artifactId>
+            <version>2.2.2</version>
+            <exclusions>
+                <exclusion>
+                    <groupId>com.zaxxer</groupId>
+                    <artifactId>HikariCP</artifactId>
+                </exclusion>
+            </exclusions>
+        </dependency>
+
+        <dependency>
             <groupId>net.bramp.ffmpeg</groupId>
             <artifactId>ffmpeg</artifactId>
             <version>0.6.2</version>
@@ -54,18 +97,6 @@
             <groupId>com.alibaba</groupId>
             <artifactId>fastjson</artifactId>
             <version>1.2.73</version>
-        </dependency>
-
-        <!--在线文档 -->
-        <dependency>
-            <groupId>org.springdoc</groupId>
-            <artifactId>springdoc-openapi-ui</artifactId>
-            <version>1.6.10</version>
-        </dependency>
-        <dependency>
-            <groupId>com.github.xiaoymin</groupId>
-            <artifactId>knife4j-springdoc-ui</artifactId>
-            <version>3.0.3</version>
         </dependency>
 
         <dependency>

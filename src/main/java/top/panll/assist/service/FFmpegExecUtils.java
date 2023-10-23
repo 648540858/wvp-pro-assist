@@ -18,7 +18,6 @@ import org.springframework.stereotype.Component;
 import org.springframework.util.DigestUtils;
 import top.panll.assist.dto.UserSettings;
 import top.panll.assist.dto.VideoFile;
-import top.panll.assist.utils.RedisUtil;
 
 import java.io.BufferedWriter;
 import java.io.File;
@@ -32,21 +31,7 @@ import java.util.concurrent.TimeUnit;
 public class FFmpegExecUtils implements InitializingBean{
 
     private final static Logger logger = LoggerFactory.getLogger(FFmpegExecUtils.class);
-//    private static FFmpegExecUtils instance;
-//
-//    public FFmpegExecUtils() {
-//    }
-//
-//    public static FFmpegExecUtils getInstance(){
-//        if(instance==null){
-//            synchronized (FFmpegExecUtils.class){
-//                if(instance==null){
-//                    instance=new FFmpegExecUtils();
-//                }
-//            }
-//        }
-//        return instance;
-//    }
+
     @Autowired
     private UserSettings userSettings;
 

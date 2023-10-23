@@ -9,25 +9,28 @@ import org.springframework.stereotype.Component;
 @Component
 public class UserSettings {
 
-    @Value("${userSettings.id}")
+    @Value("${user-settings.id}")
     private String id;
 
-    @Value("${userSettings.record}")
+    @Value("${user-settings.record}")
     private String record;
 
-    @Value("${userSettings.recordDay:7}")
+    @Value("${user-settings.recordDay:7}")
     private int recordDay;
 
-    @Value("${userSettings.recordTempDay:-1}")
+    @Value("${user-settings.recordTempDay:-1}")
     private int recordTempDay;
 
-    @Value("${userSettings.ffmpeg}")
+    @Value("${user-settings.ffmpeg}")
     private String ffmpeg;
 
-    @Value("${userSettings.ffprobe}")
+    @Value("${user-settings.ffprobe}")
     private String ffprobe;
 
-    @Value("${userSettings.threads:2}")
+    @Value("${user-settings.media-server-id}")
+    private String mediaServerId;
+
+    @Value("${user-settings.threads:2}")
     private int threads;
 
     public String getId() {
@@ -88,5 +91,13 @@ public class UserSettings {
 
     public void setThreads(int threads) {
         this.threads = threads;
+    }
+
+    public String getMediaServerId() {
+        return mediaServerId;
+    }
+
+    public void setMediaServerId(String mediaServerId) {
+        this.mediaServerId = mediaServerId;
     }
 }
