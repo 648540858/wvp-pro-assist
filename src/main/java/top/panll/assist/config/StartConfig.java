@@ -224,6 +224,7 @@ public class StartConfig implements CommandLineRunner {
                 deleteFile(deleteFile);
             }
             logger.info("清理失效文件夹结束");
+            System.exit(1);
         }
 
 
