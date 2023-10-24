@@ -49,7 +49,7 @@ public class DateUtils {
         return formatter.format(date);
     }
     public static String getTimeStr(Long dateTime) {
-        SimpleDateFormat formatter =  new SimpleDateFormat(PATTERNForTime);
+        SimpleDateFormat formatter =  new SimpleDateFormat(PATTERNForTime, Locale.CHINESE);
         return formatter.format(new Date(dateTime));
     }
 

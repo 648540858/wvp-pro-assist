@@ -90,13 +90,15 @@ public interface CloudRecordServiceMapper {
             " folder," +
             " file_path," +
             " file_size," +
+            " collect," +
+            " reserve," +
             " time_len " +
             ") " +
             "values " +
             "<foreach collection='cloudRecordItems' index='index' item='item' separator=','> " +
             "(#{item.app}, #{item.stream}, #{item.callId}, #{item.startTime}, " +
             "#{item.endTime}, #{item.mediaServerId}, #{item.fileName},#{item.folder}," +
-            "#{item.filePath}, #{item.fileSize}, #{item.timeLen}) " +
+            "#{item.filePath}, #{item.fileSize}, #{item.collect}, #{item.reserve}, #{item.timeLen}) " +
             "</foreach> " +
             "</script>")
     int batchAdd(@Param("cloudRecordItems") List<CloudRecordItem> cloudRecordItems);

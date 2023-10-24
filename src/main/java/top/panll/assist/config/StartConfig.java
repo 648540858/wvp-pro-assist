@@ -46,7 +46,7 @@ public class StartConfig implements CommandLineRunner {
 
 
     @Override
-    public void run(String... args) {
+    public void run(String... args) throws IOException {
         if (!record.endsWith(File.separator)) {
             record = record + File.separator;
         }
@@ -68,6 +68,7 @@ public class StartConfig implements CommandLineRunner {
         }
         List<CloudRecordItem> cloudRecordItemList = new ArrayList<>();
         Map<String, String> renameMap = new HashMap<>();
+        Map<String, List<CloudRecordItem>> dateVideoFileIndexList = new HashMap<>();
         List<String> streamFileList = new ArrayList<>();
         // 搜集数据
         for (File appFile : appFiles) {
@@ -92,24 +93,27 @@ public class StartConfig implements CommandLineRunner {
                         }
                         stream = streamInfoArray[0];
                         String callId = streamInfoArray[1];
-                        File[] dateFiles = streamFile.listFiles();
+                        boolean collect = false;
+                        boolean reserve = false;
+                        File[] signFiles = streamFile.listFiles(File::isFile);
+                        if (signFiles.length > 0) {
+                            for (File signFile : signFiles) {
+                                if (signFile.getName().equals("a.sign")) {
+                                    reserve = true; // 关联
+                                }else if (signFile.getName().equals("b.sign")) {
+                                    collect = true; // 归档
+                                }
+                            }
+                        }
+
+                        File[] dateFiles = streamFile.listFiles(File::isDirectory);
                         if (dateFiles == null || dateFiles.length == 0) {
                             continue;
                         }
                         streamFileList.add(streamFile.getAbsolutePath());
-                        // TODC 确定关联和归档分别使用了什么类型名称
-                        boolean collect = false;
-                        boolean reserve = false;
+
                         for (File dateFile : dateFiles) {
-                            if (dateFile.isFile()) {
-                                if (dateFile.getName().endsWith(".sign")) {
-                                    if (dateFile.getName().startsWith("a")) {
-                                        collect = true;
-                                    }else if (dateFile.getName().startsWith("b")) {
-                                        reserve = true;
-                                    }
-                                }
-                            }else {
+                            if (dateFile.isDirectory()) {
                                 // 检验是否是日期格式
                                 if (!DateUtils.checkDateFormat(dateFile.getName())) {
                                     continue;
@@ -119,6 +123,8 @@ public class StartConfig implements CommandLineRunner {
                                 if (videoFiles == null || videoFiles.length == 0) {
                                     continue;
                                 }
+
+
                                 for (int i = 0; i < videoFiles.length; i++) {
                                     File videoFile = videoFiles[i];
                                     if (!videoFile.getName().endsWith(".mp4") && !videoFile.getName().contains("-")) {
@@ -136,10 +142,16 @@ public class StartConfig implements CommandLineRunner {
                                     }
                                     String startTime = date + " "  + videoInfoArray[0];
                                     String endTime = date + " " + videoInfoArray[1];
-                                    Long startTimeStamp = DateUtils.yyyy_MM_dd_HH_mm_ssToTimestamp(startTime);
-                                    Long endTimeStamp = DateUtils.yyyy_MM_dd_HH_mm_ssToTimestamp(endTime);
+                                    Long startTimeStamp = DateUtils.yyyy_MM_dd_HH_mm_ssToTimestamp(startTime) * 1000;
+                                    Long endTimeStamp = DateUtils.yyyy_MM_dd_HH_mm_ssToTimestamp(endTime) * 1000;
 
                                     long timeLength = Long.parseLong(videoInfoArray[2].substring(0, videoInfoArray[2].length() - 4));
+
+                                    String dataPath = appFile.getAbsolutePath() + File.separator +  stream + File.separator + dateFile.getName();
+                                    if (dateVideoFileIndexList.get(dataPath) == null) {
+                                        dateVideoFileIndexList.put(dataPath, new ArrayList<>());
+                                    }
+
                                     CloudRecordItem cloudRecordItem = new CloudRecordItem();
                                     cloudRecordItem.setApp(app);
                                     cloudRecordItem.setStream(stream);
@@ -149,14 +161,14 @@ public class StartConfig implements CommandLineRunner {
                                     cloudRecordItem.setCollect(collect);
                                     cloudRecordItem.setReserve(reserve);
                                     cloudRecordItem.setMediaServerId(mediaServerId);
-                                    cloudRecordItem.setFileName(DateUtils.getTimeStr(startTimeStamp) + "-" + i + ".mp4");
+                                    cloudRecordItem.setFileName(DateUtils.getTimeStr(startTimeStamp) + "-" + dateVideoFileIndexList.get(dataPath).size() + ".mp4");
                                     cloudRecordItem.setFolder(streamFile.getAbsolutePath());
                                     cloudRecordItem.setFileSize(videoFile.length());
                                     cloudRecordItem.setTimeLen(timeLength);
                                     cloudRecordItem.setFilePath(appFile.getAbsolutePath() + File.separator +  stream + File.separator + dateFile.getName() + File.separator + cloudRecordItem.getFileName());
                                     cloudRecordItemList.add(cloudRecordItem);
+                                    dateVideoFileIndexList.get(dataPath).add(cloudRecordItem);
                                     renameMap.put(videoFile.getAbsolutePath(), cloudRecordItem.getFilePath());
-                                    System.out.println(cloudRecordItem.getFilePath());
                                 }
                             }
                         }
@@ -195,6 +207,10 @@ public class StartConfig implements CommandLineRunner {
             logger.info("开始修改磁盘文件");
             for (String oldFileName : renameMap.keySet()) {
                 File oldFile = new File(oldFileName);
+                File newFile = new File(renameMap.get(oldFileName));
+                if (!newFile.getParentFile().exists()) {
+                    newFile.getParentFile().mkdirs();
+                }
                 boolean result = oldFile.renameTo(new File(renameMap.get(oldFileName)));
                 if (result) {
                     logger.info("重命名成功： " + oldFileName + "===" + renameMap.get(oldFileName));
@@ -203,7 +219,9 @@ public class StartConfig implements CommandLineRunner {
             logger.info("修改磁盘文件完成");
             logger.info("清理失效文件夹");
             for (String streamFileStr : streamFileList) {
-                new File(streamFileStr).delete();
+                System.out.println(streamFileStr);
+                File deleteFile = new File(streamFileStr);
+                deleteFile(deleteFile);
             }
             logger.info("清理失效文件夹结束");
         }
@@ -211,5 +229,23 @@ public class StartConfig implements CommandLineRunner {
 
     }
 
+
+    public void deleteFile(File file) {
+        if (!file.exists()) {
+            logger.warn("[删除文件] {} 不存在 ", file.getAbsolutePath());
+        }else {
+            if (file.isFile()) {
+                file.delete();
+                return;
+            }
+            File[] files = file.listFiles();
+            if (files.length > 0) {
+                for (File childFile : files) {
+                    deleteFile(childFile);
+                }
+            }
+            file.delete();
+        }
+    }
 
 }
