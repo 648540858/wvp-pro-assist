@@ -176,29 +176,22 @@ public class StartConfig implements CommandLineRunner {
                 }
             }
             logger.info("数据收集完成， 待处理数据为： {}条", cloudRecordItemList.size());
+            if (cloudRecordItemList.size() == 0) {
+                System.exit(1);
+            }
             logger.info("开始将数据写入数据库");
+            // 检查记录是否存在，存在则不写入
             TransactionStatus transactionStatus = dataSourceTransactionManager.getTransaction(transactionDefinition);
-            int limitCount = 50;
-            if (cloudRecordItemList.size() > 0) {
-                if (cloudRecordItemList.size() > limitCount) {
-                    for (int i = 0; i < cloudRecordItemList.size(); i += limitCount) {
-                        int toIndex = i + limitCount;
-                        if (i + limitCount > cloudRecordItemList.size()) {
-                            toIndex = cloudRecordItemList.size();
-                        }
-                        int length = cloudRecordServiceMapper.batchAdd(cloudRecordItemList.subList(i, toIndex));
+            if (!cloudRecordItemList.isEmpty()) {
+                for (CloudRecordItem cloudRecordItem : cloudRecordItemList) {
+                    CloudRecordItem cloudRecordItemInDb = cloudRecordServiceMapper.query(cloudRecordItem.getApp(), cloudRecordItem.getStream(),cloudRecordItem.getCallId(), cloudRecordItem.getFilePath());
+                    if (cloudRecordItemInDb == null) {
+                        int length = cloudRecordServiceMapper.add(cloudRecordItem);
                         if (length == 0) {
                             logger.info("数据写入数据库失败");
                             dataSourceTransactionManager.rollback(transactionStatus);
                             System.exit(1);
                         }
-                    }
-                } else {
-                    int length = cloudRecordServiceMapper.batchAdd(cloudRecordItemList);
-                    if (length == 0) {
-                        logger.info("数据写入数据库失败");
-                        dataSourceTransactionManager.rollback(transactionStatus);
-                        System.exit(1);
                     }
                 }
                 dataSourceTransactionManager.commit(transactionStatus);
@@ -214,12 +207,13 @@ public class StartConfig implements CommandLineRunner {
                 boolean result = oldFile.renameTo(new File(renameMap.get(oldFileName)));
                 if (result) {
                     logger.info("重命名成功： " + oldFileName + "===" + renameMap.get(oldFileName));
+                }else {
+                    logger.info("重命名失败： " + oldFileName + "===" + renameMap.get(oldFileName));
                 }
             }
             logger.info("修改磁盘文件完成");
             logger.info("清理失效文件夹");
             for (String streamFileStr : streamFileList) {
-                System.out.println(streamFileStr);
                 File deleteFile = new File(streamFileStr);
                 deleteFile(deleteFile);
             }
@@ -232,6 +226,7 @@ public class StartConfig implements CommandLineRunner {
 
 
     public void deleteFile(File file) {
+        logger.warn("[删除文件] {} ", file.getAbsolutePath());
         if (!file.exists()) {
             logger.warn("[删除文件] {} 不存在 ", file.getAbsolutePath());
         }else {

@@ -20,6 +20,8 @@ public interface CloudRecordServiceMapper {
             " folder," +
             " file_path," +
             " file_size," +
+            " collect," +
+            " reserve," +
             " time_len ) " +
             "VALUES (" +
             " #{app}," +
@@ -32,6 +34,8 @@ public interface CloudRecordServiceMapper {
             " #{folder}," +
             " #{filePath}," +
             " #{fileSize}," +
+            " #{collect}," +
+            " #{reserve}," +
             " #{timeLen})" +
             " </script>")
     int add(CloudRecordItem cloudRecordItem);
@@ -102,4 +106,14 @@ public interface CloudRecordServiceMapper {
             "</foreach> " +
             "</script>")
     int batchAdd(@Param("cloudRecordItems") List<CloudRecordItem> cloudRecordItems);
+
+    @Select(" <script>" +
+            "select *" +
+            " from wvp_cloud_record " +
+            " where app = #{app} and stream = #{stream} and call_id = #{callId} and file_path=#{filePath}" +
+            " </script>")
+    CloudRecordItem query(@Param("app") String app,
+                          @Param("stream") String stream,
+                          @Param("callId") String callId,
+                          @Param("filePath") String filePath);
 }
