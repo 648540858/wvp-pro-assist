@@ -226,7 +226,7 @@ public class StartConfig implements CommandLineRunner {
 
 
     public void deleteFile(File file) {
-        logger.warn("[删除文件] {} ", file.getAbsolutePath());
+        logger.info("[删除文件] {} ", file.getAbsolutePath());
         if (!file.exists()) {
             logger.warn("[删除文件] {} 不存在 ", file.getAbsolutePath());
         }else {
