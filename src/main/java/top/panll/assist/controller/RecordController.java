@@ -132,7 +132,7 @@ public class RecordController {
     @Parameter(name = "fileLIstInfo", description = "FileLIstInfo", required = true)
     @ResponseBody
     @PostMapping(value = "/file/delete", produces = "application/json;charset=UTF-8")
-    public int fileDuration( @RequestBody FileLIstInfo fileLIstInfo) {
+    public int deleteFile( @RequestBody FileLIstInfo fileLIstInfo) {
         return videoFileService.deleteFile(fileLIstInfo.getFilePathList());
     }
 }
