@@ -224,6 +224,12 @@ public class VideoFileService {
         }
 
         File recordFile = new File(userSettings.getRecordTempPath() );
+        if (!recordFile.exists()) {
+            if (!recordFile.mkdirs()) {
+                logger.info("[录像合并] 失败， 任务ID：{}, 创建临时目录失败", taskId);
+                throw new ControllerException(ErrorCode.ERROR100.getCode(), "创建临时目录失败");
+            }
+        }
         MergeOrCutTaskInfo mergeOrCutTaskInfo = new MergeOrCutTaskInfo();
         mergeOrCutTaskInfo.setId(taskId);
         mergeOrCutTaskInfo.setApp(videoTaskInfo.getApp());
@@ -260,7 +266,7 @@ public class VideoFileService {
                     mergeOrCutTaskInfo.setPercentage("1");
 
                     // 处理文件路径
-                    Path relativize = Paths.get(userSettings.getRecordTempPath()).relativize(Paths.get(result));
+                    String relativize = new File(result).getName();
                     mergeOrCutTaskInfo.setRecordFile(relativize.toString());
                     if (videoTaskInfo.getRemoteHost() != null) {
                         mergeOrCutTaskInfo.setDownloadFile(videoTaskInfo.getRemoteHost() + "/download.html?url=download/" + relativize);

@@ -12,10 +12,10 @@ public class UserSettings {
     @Value("${userSettings.id}")
     private String id;
 
-    @Value("${userSettings.record}")
-    private String recordTempPath = "./recordTemp";
+    @Value("${userSettings.record-temp:./recordTemp}")
+    private String recordTempPath;
 
-    @Value("${userSettings.recordTempDay:7}")
+    @Value("${userSettings.record-temp-day:7}")
     private int recordTempDay;
 
     @Value("${userSettings.ffmpeg}")
