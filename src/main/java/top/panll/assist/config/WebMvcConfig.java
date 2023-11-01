@@ -17,7 +17,7 @@ public class WebMvcConfig extends WebMvcConfigurerAdapter {
 
     @Override
     public void addResourceHandlers(ResourceHandlerRegistry registry) {
-        File file = new File(userSettings.getRecord());
+        File file = new File(userSettings.getRecordTempPath());
         registry.addResourceHandler("/download/**").addResourceLocations("file://" + file.getAbsolutePath() + "/");
         super.addResourceHandlers(registry);
     }

@@ -46,7 +46,7 @@ public class VideoFileService {
     private final SimpleDateFormat simpleDateFormatForTime = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
 
     public List<File> getAppList(Boolean sort) {
-        File recordFile = new File(userSettings.getRecord());
+        File recordFile = new File(userSettings.getRecordTempPath());
         if (recordFile.isDirectory()) {
             File[] files = recordFile.listFiles((File dir, String name) -> {
                 File currentFile = new File(dir.getAbsolutePath() + File.separator + name);
@@ -63,7 +63,7 @@ public class VideoFileService {
     }
 
     public SpaceInfo getSpaceInfo(){
-        File recordFile = new File(userSettings.getRecord());
+        File recordFile = new File(userSettings.getRecordTempPath());
         SpaceInfo spaceInfo = new SpaceInfo();
         spaceInfo.setFree(recordFile.getFreeSpace());
         spaceInfo.setTotal(recordFile.getTotalSpace());
@@ -116,7 +116,7 @@ public class VideoFileService {
         logger.debug("获取[app: {}, stream: {}, statime: {}, endTime: {}]的视频", app, stream,
                 startTimeStr, endTimeStr);
 
-        File recordFile = new File(userSettings.getRecord());
+        File recordFile = new File(userSettings.getRecordTempPath());
         File streamFile = new File(recordFile.getAbsolutePath() + File.separator + app + File.separator + stream + File.separator);
         if (!streamFile.exists()) {
             logger.warn("获取[app: {}, stream: {}, statime: {}, endTime: {}]的视频时未找到目录： {}", app, stream,
@@ -223,7 +223,7 @@ public class VideoFileService {
             fileList.add(file);
         }
 
-        File recordFile = new File(userSettings.getRecord() );
+        File recordFile = new File(userSettings.getRecordTempPath() );
         MergeOrCutTaskInfo mergeOrCutTaskInfo = new MergeOrCutTaskInfo();
         mergeOrCutTaskInfo.setId(taskId);
         mergeOrCutTaskInfo.setApp(videoTaskInfo.getApp());
@@ -238,7 +238,7 @@ public class VideoFileService {
             mergeOrCutTaskInfo.setPercentage("1");
             // 处理文件路径
             String recordFileResultPath = recordFile.getAbsolutePath() + File.separator + taskId + ".mp4";
-            Path relativize = Paths.get(userSettings.getRecord()).relativize(Paths.get(recordFileResultPath));
+            Path relativize = Paths.get(userSettings.getRecordTempPath()).relativize(Paths.get(recordFileResultPath));
             try {
                 Files.copy(fileList.get(0).toPath(), Paths.get(recordFileResultPath));
             } catch (IOException e) {
@@ -260,7 +260,7 @@ public class VideoFileService {
                     mergeOrCutTaskInfo.setPercentage("1");
 
                     // 处理文件路径
-                    Path relativize = Paths.get(userSettings.getRecord()).relativize(Paths.get(result));
+                    Path relativize = Paths.get(userSettings.getRecordTempPath()).relativize(Paths.get(result));
                     mergeOrCutTaskInfo.setRecordFile(relativize.toString());
                     if (videoTaskInfo.getRemoteHost() != null) {
                         mergeOrCutTaskInfo.setDownloadFile(videoTaskInfo.getRemoteHost() + "/download.html?url=download/" + relativize);
@@ -376,7 +376,7 @@ public class VideoFileService {
     }
 
     public boolean collection(String app, String stream, String type) {
-        File streamFile = new File(userSettings.getRecord() + File.separator + app + File.separator + stream);
+        File streamFile = new File(userSettings.getRecordTempPath() + File.separator + app + File.separator + stream);
         boolean result = false;
         if (streamFile.exists() && streamFile.isDirectory() && streamFile.canWrite()) {
             File signFile = new File(streamFile.getAbsolutePath() + File.separator + type + ".sign");
@@ -390,7 +390,7 @@ public class VideoFileService {
     }
 
     public boolean removeCollection(String app, String stream, String type) {
-        File signFile = new File(userSettings.getRecord() + File.separator + app + File.separator + stream + File.separator + type + ".sign");
+        File signFile = new File(userSettings.getRecordTempPath() + File.separator + app + File.separator + stream + File.separator + type + ".sign");
         boolean result = false;
         if (signFile.exists() && signFile.isFile()) {
             result = signFile.delete();
