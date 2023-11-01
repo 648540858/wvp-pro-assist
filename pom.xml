@@ -8,8 +8,8 @@
         <version>2.7.2</version>
     </parent>
     <groupId>top.panll.assist</groupId>
-    <artifactId>wvp-pro-assist</artifactId>
-    <version>2.6.8</version>
+    <artifactId>oldRecordTransform</artifactId>
+    <version>2.6.9</version>
     <name>wvp-pro-assist</name>
     <description></description>
     <properties>
