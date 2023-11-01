@@ -124,15 +124,4 @@ public class RecordController {
     public long fileDuration( @RequestParam String app, @RequestParam String stream) {
         return videoFileService.fileDuration(app, stream);
     }
-
-    /**
-     * 删除文件
-     */
-    @Operation(summary ="删除文件")
-    @Parameter(name = "fileLIstInfo", description = "FileLIstInfo", required = true)
-    @ResponseBody
-    @PostMapping(value = "/file/delete", produces = "application/json;charset=UTF-8")
-    public int deleteFile( @RequestBody FileLIstInfo fileLIstInfo) {
-        return videoFileService.deleteFile(fileLIstInfo.getFilePathList());
-    }
 }
