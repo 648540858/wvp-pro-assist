@@ -159,7 +159,6 @@ public class StartConfig implements CommandLineRunner {
                                     cloudRecordItem.setStartTime(startTimeStamp);
                                     cloudRecordItem.setEndTime(endTimeStamp);
                                     cloudRecordItem.setCollect(collect);
-                                    cloudRecordItem.setReserve(reserve);
                                     cloudRecordItem.setMediaServerId(mediaServerId);
                                     cloudRecordItem.setFileName(DateUtils.getTimeStr(startTimeStamp) + "-" + dateVideoFileIndexList.get(dataPath).size() + ".mp4");
                                     cloudRecordItem.setFolder(streamFile.getAbsolutePath());

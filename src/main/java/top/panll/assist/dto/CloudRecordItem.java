@@ -60,10 +60,6 @@ public class CloudRecordItem {
      */
     private Boolean collect;
 
-    /**
-     * 保留，收藏的文件不移除
-     */
-    private Boolean reserve;
     
     /**
      * 文件大小
@@ -177,13 +173,5 @@ public class CloudRecordItem {
 
     public void setCollect(Boolean collect) {
         this.collect = collect;
-    }
-
-    public Boolean getReserve() {
-        return reserve;
-    }
-
-    public void setReserve(Boolean reserve) {
-        this.reserve = reserve;
     }
 }
