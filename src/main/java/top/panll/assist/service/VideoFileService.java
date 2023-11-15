@@ -244,7 +244,7 @@ public class VideoFileService {
             mergeOrCutTaskInfo.setPercentage("1");
             // 处理文件路径
             String recordFileResultPath = recordFile.getAbsolutePath() + File.separator + taskId + ".mp4";
-            Path relativize = Paths.get(userSettings.getRecordTempPath()).relativize(Paths.get(recordFileResultPath));
+            String relativize = taskId + ".mp4";
             try {
                 Files.copy(fileList.get(0).toPath(), Paths.get(recordFileResultPath));
             } catch (IOException e) {
