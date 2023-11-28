@@ -77,7 +77,7 @@ public class FFmpegExecUtils implements InitializingBean{
     }
 
     @Async
-    public void mergeOrCutFile(List<File> fils, File dest,  String destFileName, VideoHandEndCallBack callBack){
+    public void mergeOrCutFile(List<File> fils, File dest, String destFileName, VideoHandEndCallBack callBack){
 
         if (fils == null || fils.size() == 0 || ffmpeg == null || ffprobe == null || dest== null || !dest.exists()){
             callBack.run("error", 0.0, null);
@@ -129,15 +129,15 @@ public class FFmpegExecUtils implements InitializingBean{
             double percentage = progress.out_time_ns / duration_ns;
 
 //             Print out interesting information about the progress
-            System.out.println(String.format(
-                    "[%.0f%%] status:%s frame:%d time:%s ms fps:%.0f speed:%.2fx",
-                    percentage * 100,
-                    progress.status,
-                    progress.frame,
-                    FFmpegUtils.toTimecode(progress.out_time_ns, TimeUnit.NANOSECONDS),
-                    progress.fps.doubleValue(),
-                    progress.speed
-            ));
+//            System.out.println(String.format(
+//                    "[%.0f%%] status:%s frame:%d time:%s ms fps:%.0f speed:%.2fx",
+//                    percentage * 100,
+//                    progress.status,
+//                    progress.frame,
+//                    FFmpegUtils.toTimecode(progress.out_time_ns, TimeUnit.NANOSECONDS),
+//                    progress.fps.doubleValue(),
+//                    progress.speed
+//            ));
 
             if (progress.status.equals(Progress.Status.END)){
                 callBack.run(progress.status.name(), percentage, recordFileResultPath);

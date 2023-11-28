@@ -10,6 +10,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.util.DigestUtils;
+import org.springframework.util.ObjectUtils;
 import top.panll.assist.controller.bean.ControllerException;
 import top.panll.assist.controller.bean.ErrorCode;
 import top.panll.assist.dto.*;
@@ -211,22 +212,24 @@ public class VideoFileService {
         assert videoTaskInfo.getFilePathList() != null;
         assert !videoTaskInfo.getFilePathList().isEmpty();
         String taskId = DigestUtils.md5DigestAsHex(String.valueOf(System.currentTimeMillis()).getBytes());
-        logger.info("[录像合并] 开始合并， 任务ID：{}: ", taskId);
+        String logInfo = String.format("app: %S, stream: %S, callId: %S,  任务ID：%S",
+                videoTaskInfo.getApp(), videoTaskInfo.getStream(), videoTaskInfo.getCallId(), taskId);
+        logger.info("[录像合并] 开始合并，{} ", logInfo);
         List<File> fileList = new ArrayList<>();
         for (String filePath : videoTaskInfo.getFilePathList()) {
             File file = new File(filePath);
             if (!file.exists()) {
-                logger.info("[录像合并] 失败， 任务ID：{}, 文件不存在: {}", taskId, filePath);
+                logger.info("[录像合并] 失败，{} ", logInfo);
                 throw new ControllerException(ErrorCode.ERROR100.getCode(), filePath + "文件不存在");
             }
-            logger.info("[录像合并] 添加文件， 任务ID：{}, 文件: {}", taskId, filePath);
+            logger.info("[录像合并] 添加文件，{}, 文件: {}", logInfo, filePath);
             fileList.add(file);
         }
 
         File recordFile = new File(userSettings.getRecordTempPath() );
         if (!recordFile.exists()) {
             if (!recordFile.mkdirs()) {
-                logger.info("[录像合并] 失败， 任务ID：{}, 创建临时目录失败", taskId);
+                logger.info("[录像合并] 失败，{}, 创建临时目录失败", logInfo);
                 throw new ControllerException(ErrorCode.ERROR100.getCode(), "创建临时目录失败");
             }
         }
@@ -238,29 +241,30 @@ public class VideoFileService {
         mergeOrCutTaskInfo.setStartTime(videoTaskInfo.getStartTime());
         mergeOrCutTaskInfo.setEndTime(videoTaskInfo.getEndTime());
         mergeOrCutTaskInfo.setCreateTime(simpleDateFormatForTime.format(System.currentTimeMillis()));
+        String destFileName = videoTaskInfo.getStream() + "_" + videoTaskInfo.getCallId();
         if (fileList.size() == 1) {
 
             // 文件只有一个则不合并，直接复制过去
             mergeOrCutTaskInfo.setPercentage("1");
             // 处理文件路径
-            String recordFileResultPath = recordFile.getAbsolutePath() + File.separator + taskId + ".mp4";
-            String relativize = taskId + ".mp4";
+
+            String recordFileResultPath = recordFile.getAbsolutePath() + File.separator + destFileName + ".mp4";
             try {
                 Files.copy(fileList.get(0).toPath(), Paths.get(recordFileResultPath));
             } catch (IOException e) {
-                logger.info("[录像合并] 失败， 任务ID：{}", taskId, e);
+                logger.info("[录像合并] 失败， {}", logInfo, e);
                 throw new ControllerException(ErrorCode.ERROR100.getCode(), e.getMessage());
             }
-            mergeOrCutTaskInfo.setRecordFile("/download/" + relativize.toString());
+            mergeOrCutTaskInfo.setRecordFile("/download/" + destFileName + ".mp4");
             if (videoTaskInfo.getRemoteHost() != null) {
-                mergeOrCutTaskInfo.setDownloadFile(videoTaskInfo.getRemoteHost() + "/download.html?url=download/" + relativize);
-                mergeOrCutTaskInfo.setPlayFile(videoTaskInfo.getRemoteHost() + "/download/" + relativize);
+                mergeOrCutTaskInfo.setDownloadFile(videoTaskInfo.getRemoteHost() + "/download.html?url=download/" + destFileName + ".mp4");
+                mergeOrCutTaskInfo.setPlayFile(videoTaskInfo.getRemoteHost() + "/download/" + destFileName + ".mp4");
             }
             String key = String.format("%S_%S_%S", AssistConstants.MERGEORCUT , userSettings.getId(), mergeOrCutTaskInfo.getId());
             redisUtil.set(key, mergeOrCutTaskInfo);
             logger.info("[录像合并] 成功， 任务ID：{}", taskId);
         }else {
-            ffmpegExecUtils.mergeOrCutFile(fileList, recordFile, taskId, (status, percentage, result)->{
+            ffmpegExecUtils.mergeOrCutFile(fileList, recordFile, destFileName, (status, percentage, result)->{
                 // 发出redis通知
                 if (status.equals(Progress.Status.END.name())) {
                     mergeOrCutTaskInfo.setPercentage("1");
@@ -272,7 +276,7 @@ public class VideoFileService {
                         mergeOrCutTaskInfo.setDownloadFile(videoTaskInfo.getRemoteHost() + "/download.html?url=download/" + relativize);
                         mergeOrCutTaskInfo.setPlayFile(videoTaskInfo.getRemoteHost() + "/download/" + relativize);
                     }
-                    logger.info("[录像合并] 成功， 任务ID：{}", taskId);
+                    logger.info("[录像合并] 成功， {}", logInfo);
                 }else {
                     mergeOrCutTaskInfo.setPercentage(percentage + "");
                 }
@@ -336,7 +340,9 @@ public class VideoFileService {
         return dateFileList;
     }
 
-    public List<MergeOrCutTaskInfo> getTaskListForDownload(Boolean idEnd, String taskId) {
+    public List<MergeOrCutTaskInfo> getTaskListForDownload(String app, String stream, String callId, Boolean isEnd, String taskId) {
+        logger.info("[查询录像合成列表] app： {}， stream： {}， callId： {}, isEnd: {}, taskId: {}",
+                app, stream, callId, isEnd, taskId);
         ArrayList<MergeOrCutTaskInfo> result = new ArrayList<>();
         if (taskId == null) {
             taskId = "*";
@@ -346,19 +352,27 @@ public class VideoFileService {
         for (int i = 0; i < taskCatch.size(); i++) {
             String keyItem = taskCatch.get(i).toString();
             MergeOrCutTaskInfo mergeOrCutTaskInfo = (MergeOrCutTaskInfo)redisUtil.get(keyItem);
-            if (mergeOrCutTaskInfo != null && mergeOrCutTaskInfo.getPercentage() != null){
-                if (idEnd != null ) {
-                    if (idEnd) {
-                        if (Double.parseDouble(mergeOrCutTaskInfo.getPercentage()) == 1){
-                            result.add(mergeOrCutTaskInfo);
+            if (mergeOrCutTaskInfo != null){
+                if ((!ObjectUtils.isEmpty(app) && !mergeOrCutTaskInfo.getApp().equals(app))
+                        || (!ObjectUtils.isEmpty(stream) && !mergeOrCutTaskInfo.getStream().equals(stream))
+                        || (!ObjectUtils.isEmpty(callId) && !mergeOrCutTaskInfo.getCallId().equals(callId))
+                ) {
+                    continue;
+                }
+                if (mergeOrCutTaskInfo.getPercentage() != null){
+                    if (isEnd != null ) {
+                        if (isEnd) {
+                            if (Double.parseDouble(mergeOrCutTaskInfo.getPercentage()) == 1){
+                                result.add(mergeOrCutTaskInfo);
+                            }
+                        }else {
+                            if (Double.parseDouble(mergeOrCutTaskInfo.getPercentage()) < 1){
+                                result.add((MergeOrCutTaskInfo)redisUtil.get(keyItem));
+                            }
                         }
                     }else {
-                        if (Double.parseDouble(mergeOrCutTaskInfo.getPercentage()) < 1){
-                            result.add((MergeOrCutTaskInfo)redisUtil.get(keyItem));
-                        }
+                        result.add((MergeOrCutTaskInfo)redisUtil.get(keyItem));
                     }
-                }else {
-                    result.add((MergeOrCutTaskInfo)redisUtil.get(keyItem));
                 }
             }
         }

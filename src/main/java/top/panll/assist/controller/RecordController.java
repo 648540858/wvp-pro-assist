@@ -73,9 +73,12 @@ public class RecordController {
     @GetMapping(value = "/file/download/task/list")
     @ResponseBody
     public List<MergeOrCutTaskInfo> getTaskListForDownload(
+            @RequestParam(required = false) String app,
+            @RequestParam(required = false) String stream,
+            @RequestParam(required = false) String callId,
             @RequestParam(required = false) String taskId,
             @RequestParam(required = false) Boolean isEnd){
-        List<MergeOrCutTaskInfo> taskList = videoFileService.getTaskListForDownload(isEnd, taskId);
+        List<MergeOrCutTaskInfo> taskList = videoFileService.getTaskListForDownload(app, stream, callId, isEnd, taskId);
         if (taskList == null) {
             throw new ControllerException(ErrorCode.ERROR100);
         }
