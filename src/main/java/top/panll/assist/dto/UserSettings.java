@@ -12,13 +12,10 @@ public class UserSettings {
     @Value("${userSettings.id}")
     private String id;
 
-    @Value("${userSettings.record}")
-    private String record;
+    @Value("${userSettings.record-temp:./recordTemp}")
+    private String recordTempPath;
 
-    @Value("${userSettings.recordDay:7}")
-    private int recordDay;
-
-    @Value("${userSettings.recordTempDay:-1}")
+    @Value("${userSettings.record-temp-day:7}")
     private int recordTempDay;
 
     @Value("${userSettings.ffmpeg}")
@@ -38,14 +35,6 @@ public class UserSettings {
         this.id = id;
     }
 
-    public String getRecord() {
-        return record;
-    }
-
-    public void setRecord(String record) {
-        this.record = record;
-    }
-
     public String getFfmpeg() {
         return ffmpeg;
     }
@@ -62,20 +51,9 @@ public class UserSettings {
         this.ffprobe = ffprobe;
     }
 
-    public int getRecordDay() {
-        return recordDay;
-    }
-
-    public void setRecordDay(int recordDay) {
-        this.recordDay = recordDay;
-    }
 
     public int getRecordTempDay() {
-        if (recordTempDay == -1) {
-            return recordDay;
-        }else {
-            return recordTempDay;
-        }
+        return recordTempDay;
     }
 
     public void setRecordTempDay(int recordTempDay) {
@@ -88,5 +66,13 @@ public class UserSettings {
 
     public void setThreads(int threads) {
         this.threads = threads;
+    }
+
+    public String getRecordTempPath() {
+        return recordTempPath;
+    }
+
+    public void setRecordTempPath(String recordTempPath) {
+        this.recordTempPath = recordTempPath;
     }
 }

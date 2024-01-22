@@ -28,10 +28,10 @@ server:
 
 # [根据业务需求配置]
 user-settings:
-    # [可选 ] zlm配置的录像路径，不配置则使用当前目录下的record目录 即： ./record
-    record: /media/lin/Server/ZLMediaKit/dev/ZLMediaKit/release/linux/Debug/www/record
+    # [可选 ] 临时录像路径
+    record-temp-path: ./recordTemp
     # [可选 ] 录像保存时长（单位： 天）每天晚12点自动对过期文件执行清理, 不配置则不删除
-    recordDay: 7
+    record-temp-day: 7
     # [可选 ] 录像下载合成临时文件保存时长， 不配置默认取值recordDay（单位： 天）每天晚12点自动对过期文件执行清理
     # recordTempDay: 7
     # [必选 ] ffmpeg路径

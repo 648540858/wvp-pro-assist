@@ -9,7 +9,7 @@
     </parent>
     <groupId>top.panll.assist</groupId>
     <artifactId>wvp-pro-assist</artifactId>
-    <version>2.6.8</version>
+    <version>2.6.9</version>
     <name>wvp-pro-assist</name>
     <description></description>
     <properties>
