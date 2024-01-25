@@ -247,8 +247,9 @@ public class VideoFileService {
             // 文件只有一个则不合并，直接复制过去
             mergeOrCutTaskInfo.setPercentage("1");
             // 处理文件路径
-
             String recordFileResultPath = recordFile.getAbsolutePath() + File.separator + destFileName + ".mp4";
+            File destFile = new File(recordFileResultPath);
+            destFile.deleteOnExit();
             try {
                 Files.copy(fileList.get(0).toPath(), Paths.get(recordFileResultPath));
             } catch (IOException e) {
