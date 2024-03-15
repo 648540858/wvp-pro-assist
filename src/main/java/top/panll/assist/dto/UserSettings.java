@@ -12,7 +12,7 @@ public class UserSettings {
     @Value("${userSettings.id}")
     private String id;
 
-    @Value("${userSettings.record-temp:./recordTemp}")
+    @Value("${userSettings.record-temp-path:./recordTemp}")
     private String recordTempPath;
 
     @Value("${userSettings.record-temp-day:7}")
