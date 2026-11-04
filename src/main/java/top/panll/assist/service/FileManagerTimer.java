@@ -75,7 +75,7 @@ public class FileManagerTimer {
             MergeOrCutTaskInfo mergeOrCutTaskInfo = (MergeOrCutTaskInfo)redisUtil.get(taskKey);
             try {
                 if (StringUtils.hasLength(mergeOrCutTaskInfo.getCreateTime())
-                        || simpleDateFormatForTime.parse(mergeOrCutTaskInfo.getCreateTime()).before(lastTempDate)) {
+                        && simpleDateFormatForTime.parse(mergeOrCutTaskInfo.getCreateTime()).before(lastTempDate)) {
                     redisUtil.del(taskKey);
                 }
             } catch (ParseException e) {
