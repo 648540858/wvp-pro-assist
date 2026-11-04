@@ -2,6 +2,12 @@ package top.panll.assist.dto;
 
 
 public class MergeOrCutTaskInfo {
+    private String status;
+    private String error;
+    public String getStatus() { return status; }
+    public void setStatus(String status) { this.status=status; }
+    public String getError() { return error; }
+    public void setError(String error) { this.error=error; }
     private String id;
     private String createTime;
     private String percentage;

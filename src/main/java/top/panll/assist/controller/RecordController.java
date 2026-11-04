@@ -64,6 +64,14 @@ public class RecordController {
         return id;
     }
 
+    // WVP only reads response bodies for successful HTTP responses. Keep business
+    // failures in the existing code/msg envelope so the actual reason reaches callers.
+    @ExceptionHandler(ControllerException.class)
+    @ResponseStatus(org.springframework.http.HttpStatus.OK)
+    public WVPResult<String> recordError(ControllerException error) {
+        return WVPResult.fail(error.getCode(), error.getMsg());
+    }
+
     /**
      * 查询视频裁剪合并任务列表
      */

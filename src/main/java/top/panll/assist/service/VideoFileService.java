@@ -208,7 +208,18 @@ public class VideoFileService {
     }
 
 
+    @Autowired
+    private AccurateClipService accurateClipService;
+
+    /** 未传时间时保留原有合并协议，只有显式裁切请求进入准确切片。 */
     public String mergeOrCut(VideoTaskInfo videoTaskInfo) {
+        if (videoTaskInfo.getStartTime() != null || videoTaskInfo.getEndTime() != null) {
+            return accurateClipService.submit(videoTaskInfo);
+        }
+        return mergeWithoutCut(videoTaskInfo);
+    }
+
+    private String mergeWithoutCut(VideoTaskInfo videoTaskInfo) {
         assert videoTaskInfo.getFilePathList() != null;
         assert !videoTaskInfo.getFilePathList().isEmpty();
         String taskId = DigestUtils.md5DigestAsHex(String.valueOf(System.currentTimeMillis()).getBytes());
@@ -356,18 +367,18 @@ public class VideoFileService {
             if (mergeOrCutTaskInfo != null){
                 if ((!ObjectUtils.isEmpty(app) && !mergeOrCutTaskInfo.getApp().equals(app))
                         || (!ObjectUtils.isEmpty(stream) && !mergeOrCutTaskInfo.getStream().equals(stream))
-                        || (!ObjectUtils.isEmpty(callId) && !mergeOrCutTaskInfo.getCallId().equals(callId))
+                        || (!ObjectUtils.isEmpty(callId) && !Objects.equals(mergeOrCutTaskInfo.getCallId(),callId))
                 ) {
                     continue;
                 }
                 if (mergeOrCutTaskInfo.getPercentage() != null){
                     if (isEnd != null ) {
                         if (isEnd) {
-                            if (Double.parseDouble(mergeOrCutTaskInfo.getPercentage()) == 1){
+                            if ((Double.parseDouble(mergeOrCutTaskInfo.getPercentage()) == 1 || "FAILED".equals(mergeOrCutTaskInfo.getStatus()))){
                                 result.add(mergeOrCutTaskInfo);
                             }
                         }else {
-                            if (Double.parseDouble(mergeOrCutTaskInfo.getPercentage()) < 1){
+                            if ((Double.parseDouble(mergeOrCutTaskInfo.getPercentage()) < 1 && !"FAILED".equals(mergeOrCutTaskInfo.getStatus()))){
                                 result.add((MergeOrCutTaskInfo)redisUtil.get(keyItem));
                             }
                         }
