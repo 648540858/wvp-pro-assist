@@ -208,85 +208,11 @@ public class VideoFileService {
     }
 
 
+    @Autowired
+    private AccurateClipService accurateClipService;
+
     public String mergeOrCut(VideoTaskInfo videoTaskInfo) {
-        assert videoTaskInfo.getFilePathList() != null;
-        assert !videoTaskInfo.getFilePathList().isEmpty();
-        String taskId = DigestUtils.md5DigestAsHex(String.valueOf(System.currentTimeMillis()).getBytes());
-        String logInfo = String.format("app: %S, stream: %S, callId: %S,  任务ID：%S",
-                videoTaskInfo.getApp(), videoTaskInfo.getStream(), videoTaskInfo.getCallId(), taskId);
-        logger.info("[录像合并] 开始合并，{} ", logInfo);
-        List<File> fileList = new ArrayList<>();
-        for (String filePath : videoTaskInfo.getFilePathList()) {
-            File file = new File(filePath);
-            if (!file.exists()) {
-                logger.info("[录像合并] 失败，{} ", logInfo);
-                throw new ControllerException(ErrorCode.ERROR100.getCode(), filePath + "文件不存在");
-            }
-            logger.info("[录像合并] 添加文件，{}, 文件: {}", logInfo, filePath);
-            fileList.add(file);
-        }
-
-        File recordFile = new File(userSettings.getRecordTempPath() );
-        if (!recordFile.exists()) {
-            if (!recordFile.mkdirs()) {
-                logger.info("[录像合并] 失败，{}, 创建临时目录失败", logInfo);
-                throw new ControllerException(ErrorCode.ERROR100.getCode(), "创建临时目录失败");
-            }
-        }
-        MergeOrCutTaskInfo mergeOrCutTaskInfo = new MergeOrCutTaskInfo();
-        mergeOrCutTaskInfo.setId(taskId);
-        mergeOrCutTaskInfo.setApp(videoTaskInfo.getApp());
-        mergeOrCutTaskInfo.setStream(videoTaskInfo.getStream());
-        mergeOrCutTaskInfo.setCallId(videoTaskInfo.getCallId());
-        mergeOrCutTaskInfo.setStartTime(videoTaskInfo.getStartTime());
-        mergeOrCutTaskInfo.setEndTime(videoTaskInfo.getEndTime());
-        mergeOrCutTaskInfo.setCreateTime(simpleDateFormatForTime.format(System.currentTimeMillis()));
-        String destFileName = videoTaskInfo.getStream() + "_" + videoTaskInfo.getCallId();
-        if (fileList.size() == 1) {
-
-            // 文件只有一个则不合并，直接复制过去
-            mergeOrCutTaskInfo.setPercentage("1");
-            // 处理文件路径
-            String recordFileResultPath = recordFile.getAbsolutePath() + File.separator + destFileName + ".mp4";
-            File destFile = new File(recordFileResultPath);
-            destFile.deleteOnExit();
-            try {
-                Files.copy(fileList.get(0).toPath(), Paths.get(recordFileResultPath));
-            } catch (IOException e) {
-                logger.info("[录像合并] 失败， {}", logInfo, e);
-                throw new ControllerException(ErrorCode.ERROR100.getCode(), e.getMessage());
-            }
-            mergeOrCutTaskInfo.setRecordFile("/download/" + destFileName + ".mp4");
-            if (videoTaskInfo.getRemoteHost() != null) {
-                mergeOrCutTaskInfo.setDownloadFile(videoTaskInfo.getRemoteHost() + "/download.html?url=download/" + destFileName + ".mp4");
-                mergeOrCutTaskInfo.setPlayFile(videoTaskInfo.getRemoteHost() + "/download/" + destFileName + ".mp4");
-            }
-            String key = String.format("%S_%S_%S", AssistConstants.MERGEORCUT , userSettings.getId(), mergeOrCutTaskInfo.getId());
-            redisUtil.set(key, mergeOrCutTaskInfo);
-            logger.info("[录像合并] 成功， 任务ID：{}", taskId);
-        }else {
-            ffmpegExecUtils.mergeOrCutFile(fileList, recordFile, destFileName, (status, percentage, result)->{
-                // 发出redis通知
-                if (status.equals(Progress.Status.END.name())) {
-                    mergeOrCutTaskInfo.setPercentage("1");
-
-                    // 处理文件路径
-                    String relativize = new File(result).getName();
-                    mergeOrCutTaskInfo.setRecordFile(relativize.toString());
-                    if (videoTaskInfo.getRemoteHost() != null) {
-                        mergeOrCutTaskInfo.setDownloadFile(videoTaskInfo.getRemoteHost() + "/download.html?url=download/" + relativize);
-                        mergeOrCutTaskInfo.setPlayFile(videoTaskInfo.getRemoteHost() + "/download/" + relativize);
-                    }
-                    logger.info("[录像合并] 成功， {}", logInfo);
-                }else {
-                    mergeOrCutTaskInfo.setPercentage(percentage + "");
-                }
-                String key = String.format("%S_%S_%S", AssistConstants.MERGEORCUT, userSettings.getId(), mergeOrCutTaskInfo.getId());
-                redisUtil.set(key, mergeOrCutTaskInfo);
-            });
-        }
-
-        return taskId;
+        return accurateClipService.submit(videoTaskInfo);
     }
 
     public List<File> getDateList(File streamFile, Integer year, Integer month, Boolean sort) {
@@ -356,18 +282,18 @@ public class VideoFileService {
             if (mergeOrCutTaskInfo != null){
                 if ((!ObjectUtils.isEmpty(app) && !mergeOrCutTaskInfo.getApp().equals(app))
                         || (!ObjectUtils.isEmpty(stream) && !mergeOrCutTaskInfo.getStream().equals(stream))
-                        || (!ObjectUtils.isEmpty(callId) && !mergeOrCutTaskInfo.getCallId().equals(callId))
+                        || (!ObjectUtils.isEmpty(callId) && !Objects.equals(mergeOrCutTaskInfo.getCallId(),callId))
                 ) {
                     continue;
                 }
                 if (mergeOrCutTaskInfo.getPercentage() != null){
                     if (isEnd != null ) {
                         if (isEnd) {
-                            if (Double.parseDouble(mergeOrCutTaskInfo.getPercentage()) == 1){
+                            if ((Double.parseDouble(mergeOrCutTaskInfo.getPercentage()) == 1 || "FAILED".equals(mergeOrCutTaskInfo.getStatus()))){
                                 result.add(mergeOrCutTaskInfo);
                             }
                         }else {
-                            if (Double.parseDouble(mergeOrCutTaskInfo.getPercentage()) < 1){
+                            if ((Double.parseDouble(mergeOrCutTaskInfo.getPercentage()) < 1 && !"FAILED".equals(mergeOrCutTaskInfo.getStatus()))){
                                 result.add((MergeOrCutTaskInfo)redisUtil.get(keyItem));
                             }
                         }
