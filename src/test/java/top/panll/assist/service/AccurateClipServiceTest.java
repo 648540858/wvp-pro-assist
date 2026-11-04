@@ -71,13 +71,36 @@ class AccurateClipServiceTest {
     }
     @Test void rejectsOutOfRootFilesAndUncoveredTimes() {
         VideoTaskInfo r=request("03","05","bad");r.setFilePathList(Collections.singletonList(temp.resolve("outside.mp4").toString()));
-        assertThrows(ControllerException.class,()->service.submit(r));
+        ControllerException error=assertThrows(ControllerException.class,()->service.submit(r));
+        assertEquals("裁剪处理失败，请检查录像文件或媒体工具",error.getMsg());
+        assertFalse(error.getMsg().contains(temp.toString()));
+        r.setFilePathList(Collections.singletonList("https://synthetic-user:synthetic-password@example.invalid/source.mp4?secret=never-log"));
+        ControllerException credentialError=assertThrows(ControllerException.class,()->service.submit(r));
+        assertEquals("裁剪处理失败，请检查录像文件或媒体工具",credentialError.getMsg());
         assertThrows(ControllerException.class,()->service.submit(request("07","10","missing")));
     }
     @Test void persistsEncoderFailure() throws Exception {
         settings.setFfmpeg("/missing-ffmpeg");String id=service.submit(request("01","02","failure"));
         long deadline=System.nanoTime()+TimeUnit.SECONDS.toNanos(10);
         while(!"FAILED".equals(tasks.get(id).getStatus()) && System.nanoTime()<deadline)Thread.sleep(30);
-        assertEquals("FAILED",tasks.get(id).getStatus());assertNotNull(tasks.get(id).getError());
+        assertEquals("FAILED",tasks.get(id).getStatus());
+        assertEquals("裁剪处理失败，请检查录像文件或媒体工具",tasks.get(id).getError());
+        assertFalse(tasks.get(id).getError().contains("/missing-ffmpeg"));
+    }
+    @Test void encoderStderrDoesNotExposePrivatePathsOrCredentials() throws Exception {
+        Path privateInput=temp.resolve("private-secret-never-log.mp4");
+        Path encoder=temp.resolve("failing-encoder");
+        String script="#!/bin/sh\nexec '"+ffmpeg.replace("'","'\\''")
+                +"' -nostdin -v error -i '"+privateInput.toString().replace("'","'\\''")+"' -f null -\n";
+        Files.write(encoder,script.getBytes(java.nio.charset.StandardCharsets.UTF_8));
+        assertTrue(encoder.toFile().setExecutable(true));
+        settings.setFfmpeg(encoder.toString());
+        String id=service.submit(request("01","02","stderr-failure"));
+        long deadline=System.nanoTime()+TimeUnit.SECONDS.toNanos(10);
+        while(!"FAILED".equals(tasks.get(id).getStatus()) && System.nanoTime()<deadline)Thread.sleep(30);
+        assertEquals("FAILED",tasks.get(id).getStatus());
+        assertEquals("裁剪处理失败，请检查录像文件或媒体工具",tasks.get(id).getError());
+        assertFalse(tasks.get(id).getError().contains(privateInput.toString()));
+        assertFalse(tasks.get(id).getError().contains("secret"));
     }
 }

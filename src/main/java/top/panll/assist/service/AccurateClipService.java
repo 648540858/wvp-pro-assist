@@ -29,6 +29,23 @@ public class AccurateClipService {
     }
     @PreDestroy public void shutdown() { executor.shutdownNow(); }
     private static String seconds(double value) { return String.format(Locale.ROOT,"%.6f",value); }
+    /** 对外只保留受控业务原因，文件系统和媒体工具原始错误可能包含路径或凭据。 */
+    private static String publicFailure(Exception error) {
+        if (error instanceof RejectedExecutionException) return "裁剪队列已满，请稍后重试";
+        String message=error.getMessage();
+        if (message!=null && Arrays.asList("录像列表为空","只能处理录像目录中已完成的文件",
+                "开始和结束时间必须同时提供","没有可用录像","结束时间必须晚于开始时间",
+                "录像未完整覆盖目标时间段","所选录像的分辨率或音轨不一致","录像没有视频轨道",
+                "无法保存任务状态到 Redis","媒体处理超时").contains(message)) return message;
+        if (error instanceof IllegalArgumentException && message!=null) {
+            if (message.matches("目标时间存在录像缺口 [0-9]+\\.[0-9]{3} 秒")) return message;
+            if (message.startsWith("不支持的录像文件名: ")) return "不支持的录像文件名";
+            if (message.startsWith("录像时长无效: ")) return "录像时长无效";
+        }
+        if (error instanceof IllegalStateException && message!=null
+                && message.startsWith("输出时长校验失败: expected=")) return "输出时长校验失败";
+        return "裁剪处理失败，请检查录像文件或媒体工具";
+    }
     private void save(MergeOrCutTaskInfo task) {
         String key=String.format("%S_%S_%S",AssistConstants.MERGEORCUT,settings.getId(),task.getId());
         if (!redis.set(key,task)) throw new IllegalStateException("无法保存任务状态到 Redis");
@@ -57,7 +74,7 @@ public class AccurateClipService {
             catch (RejectedExecutionException e) { task.setStatus("FAILED");task.setError("裁剪队列已满，请稍后重试");save(task);throw e; }
             return task.getId();
         } catch (Exception e) {
-            throw new ControllerException(100,e.getMessage()==null?e.getClass().getSimpleName():e.getMessage());
+            throw new ControllerException(100,publicFailure(e));
         }
     }
     private ClipPlanner.Source probe(Path file) throws Exception {
@@ -110,7 +127,7 @@ public class AccurateClipService {
             }
             task.setPercentage("1");task.setStatus("SUCCESS");save(task);
         } catch (Exception e) {
-            task.setStatus("FAILED");task.setError(e.getMessage());task.setPercentage("0");
+            task.setStatus("FAILED");task.setError(publicFailure(e));task.setPercentage("0");
             if(output!=null)try{Files.deleteIfExists(output);}catch(IOException ignored){}
             save(task);
         } finally {
